@@ -1,0 +1,406 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "HighPerformance API",
+    "description": "API for managing salesmen, social performance records, and bonus calculation processes by integrating OrangeHRM and OpenCRX.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3001",
+      "description": "Local Development Server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Salesmen",
+      "description": "Managing salesmen data"
+    },
+    {
+      "name": "Social Performance",
+      "description": "Managing social performance records"
+    },
+    {
+      "name": "Bonus Process",
+      "description": "Endpoints for bonus calculation and approval processes"
+    }
+  ],
+  "paths": {
+    "/api/salesmen": {
+      "get": {
+        "tags": ["Salesmen"],
+        "summary": "Get list of salesmen",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "query",
+            "schema": { "type": "integer" },
+            "description": "Filter by salesman ID"
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "schema": { "type": "integer" },
+            "description": "Filter by year of performance"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of salesmen",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Salesman" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Salesmen"],
+        "summary": "Create a new salesman",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SalesmanInput" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Salesman created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Salesman" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/social-performance": {
+      "post": {
+        "tags": ["Social Performance"],
+        "summary": "Add Social Performance Record",
+        "description": "Creates a new social performance record for a salesman and calculates the bonus value based on supervisor and peer group ratings.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SocialPerformanceInput" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Record created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SocialPerformance" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/social-performance/{sid}": {
+      "get": {
+        "tags": ["Social Performance"],
+        "summary": "Get Social Performance Records for a Salesman",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "ID salesman"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of social performance records",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/SocialPerformance" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bonus/integration/orangehrm/sync-employees": {
+      "post": {
+        "tags": ["Bonus Process"],
+        "summary": "Sync Sales Employees from OrangeHRM",
+        "description": "Downloads and synchronizes sales employee data from OrangeHRM into the local database.",
+        "responses": {
+          "200": {
+            "description": "Synchronization complete",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bonus/social-performance": {
+      "post": {
+        "tags": ["Bonus Process"],
+        "summary": "Add Social Performance Record with Bonus Calculation",
+        "description": "Adds a social performance record and calculates the bonus value. Optionally includes remarks.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  { "$ref": "#/components/schemas/SocialPerformanceInput" },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "remarks": { "type": "string" }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Record created with bonus calculated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SocialPerformance" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bonus/approve/{sid}/{year}": {
+      "post": {
+        "tags": ["Bonus Process"],
+        "summary": "Approve Social Bonuses for a Salesman",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "year",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bonuses approved and saved to HR"
+          }
+        }
+      }
+    },
+    "/api/bonus/orders/fetch/{sid}/{year}": {
+      "post": {
+        "tags": ["Bonus Process"],
+        "summary": "Get Order Performance Data for Bonus Calculation",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "year",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order performance data retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/OrderPerformance" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bonus/cockpit/{sid}/{year}": {
+      "get": {
+        "tags": ["Bonus Process"],
+        "summary": "Cockpit View of Bonuses",
+        "description": "View a consolidated summary of social and order bonuses for a salesman for a specific year.",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "year",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cockpit bonus data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "salesmanId": { "type": "integer" },
+                    "year": { "type": "integer" },
+                    "grandTotal": { "type": "number" },
+                    "socialBonus": { "type": "object" },
+                    "ordersBonus": { "type": "object" },
+                    "qualifications": { "type": "array", "items": { "type": "string" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bonus/approve/final/{sid}/{year}": {
+      "post": {
+        "tags": ["Bonus Process"],
+        "summary": "Final Approval of Bonuses",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "year",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "newQualification": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Final approval processed and saved to HR"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Salesman": {
+        "type": "object",
+        "properties": {
+          "sid": { "type": "integer" },
+          "firstname": { "type": "string" },
+          "lastname": { "type": "string" },
+          "department": { "type": "string" },
+          "yearOfPerformance": { "type": "integer" },
+          "governmentId": { "type": "string" }
+        }
+      },
+      "SalesmanInput": {
+        "type": "object",
+        "required": ["sid", "firstname", "lastname"],
+        "properties": {
+          "sid": { "type": "integer" },
+          "firstname": { "type": "string" },
+          "lastname": { "type": "string" },
+          "department": { "type": "string" },
+          "yearOfPerformance": { "type": "integer" }
+        }
+      },
+      "SocialPerformance": {
+        "type": "object",
+        "properties": {
+          "salesmanId": { "type": "integer" },
+          "description": { "type": "string" },
+          "valueSupervisor": { "type": "number" },
+          "valuePeerGroup": { "type": "number" },
+          "bonusValue": { "type": "number" },
+          "year": { "type": "integer" },
+          "remarks": { "type": "string" },
+          "isApprovedByCEO": { "type": "boolean" }
+        }
+      },
+      "SocialPerformanceInput": {
+        "type": "object",
+        "required": ["salesmanId", "description", "valueSupervisor", "valuePeerGroup", "year"],
+        "properties": {
+          "salesmanId": { "type": "integer" },
+          "description": { "type": "string" },
+          "valueSupervisor": { "type": "number" },
+          "valuePeerGroup": { "type": "number" },
+          "year": { "type": "integer" },
+          "remarks": { "type": "string" }
+        }
+      },
+      "OrderPerformance": {
+        "type": "object",
+        "properties": {
+          "salesmanId": { "type": "integer" },
+          "year": { "type": "integer" },
+          "orderId": { "type": "string" },
+          "productName": { "type": "string" },
+          "clientName": { "type": "string" },
+          "clientRanking": { "type": "string" },
+          "closingProbability": { "type": "number" },
+          "quantity": { "type": "number" },
+          "amount": { "type": "number" },
+          "currency": { "type": "string" },
+          "computedBonus": { "type": "number" },
+          "hrReviewStatus": { "type": "boolean" },
+          "ceoReviewStatus": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}

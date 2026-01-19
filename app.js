@@ -1,3 +1,5 @@
+const swaggerUi = require('swagger-ui-express');
+const swaggerDocument = require('./swagger.json');
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
@@ -8,6 +10,9 @@ const bonusRouter = require('./routes/bonusRouter');
 
 const app = express();
 app.use(bodyParser.json());
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
 app.use('/api/salesmen', salesmanRouter)
 app.use('/api/social-performance', socialPerformanceRouter)
 app.use('/api/bonus', bonusRouter)
