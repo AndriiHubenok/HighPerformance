@@ -1,0 +1,237 @@
+{
+  "info": {
+    "_postman_id": "fc22c5c8-e180-4dd8-9928-8ad5fdbba58a",
+    "name": "HighPerformance",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "34077452"
+  },
+  "item": [
+    {
+      "name": "SwaggerUI",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api-docs",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api-docs"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Create Salesman",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"sid\": 90123,\r\n    \"firstname\": \"Max\",\r\n    \"lastname\": \"Verstappen\",\r\n    \"department\": \"Sales\",\r\n    \"yearOfPerformance\": 2025\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/salesmen",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "salesmen"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Salesmen",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/salesmen",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "salesmen"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Create Social Performance with Bonus and Remark (Optional)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"salesmanId\": 7,\r\n    \"description\": \"Great performance\",\r\n    \"valueSupervisor\": 5,\r\n    \"valuePeerGroup\": 5,\r\n    \"year\": 2022,\r\n    \"remarks\": \"Thank you\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/social-performance",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "social-performance"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Social Performance",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/social-performance/7",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "social-performance",
+            "7"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Syncronize Salesmen from OrangeHRM",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/bonus/integration/orangehrm/sync-employees",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "bonus",
+            "integration",
+            "orangehrm",
+            "sync-employees"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Fetch Order Performace from OpenCRX and calculate bonus",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/bonus/orders/fetch/7/2022",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "bonus",
+            "orders",
+            "fetch",
+            "7",
+            "2022"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get All Bonuses of Salesman",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/bonus/cockpit/7/2022",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "bonus",
+            "cockpit",
+            "7",
+            "2022"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "(HR) Approve Total Bonus",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/bonus/approve/final/hr/7/2022",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "bonus",
+            "approve",
+            "final",
+            "hr",
+            "7",
+            "2022"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "(CEO) Approve Total Bonus",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"qualification\": \"Empathy\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/bonus/approve/final/ceo/7/2022",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "bonus",
+            "approve",
+            "final",
+            "ceo",
+            "7",
+            "2022"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

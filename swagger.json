@@ -156,66 +156,6 @@
         }
       }
     },
-    "/api/bonus/social-performance": {
-      "post": {
-        "tags": ["Bonus Process"],
-        "summary": "Add Social Performance Record with Bonus Calculation",
-        "description": "Adds a social performance record and calculates the bonus value. Optionally includes remarks.",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "allOf": [
-                  { "$ref": "#/components/schemas/SocialPerformanceInput" },
-                  {
-                    "type": "object",
-                    "properties": {
-                      "remarks": { "type": "string" }
-                    }
-                  }
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Record created with bonus calculated",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/SocialPerformance" }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/bonus/approve/{sid}/{year}": {
-      "post": {
-        "tags": ["Bonus Process"],
-        "summary": "Approve Social Bonuses for a Salesman",
-        "parameters": [
-          {
-            "name": "sid",
-            "in": "path",
-            "required": true,
-            "schema": { "type": "integer" }
-          },
-          {
-            "name": "year",
-            "in": "path",
-            "required": true,
-            "schema": { "type": "integer" }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Bonuses approved and saved to HR"
-          }
-        }
-      }
-    },
     "/api/bonus/orders/fetch/{sid}/{year}": {
       "post": {
         "tags": ["Bonus Process"],
@@ -296,22 +236,59 @@
         }
       }
     },
-    "/api/bonus/approve/final/{sid}/{year}": {
+    "/api/bonus/approve/final/hr/{sid}/{year}": {
       "post": {
-        "tags": ["Bonus Process"],
-        "summary": "Final Approval of Bonuses",
+        "tags": [
+          "Bonus Process"
+        ],
+        "summary": "Final Approval by HR",
         "parameters": [
           {
             "name": "sid",
             "in": "path",
             "required": true,
-            "schema": { "type": "integer" }
+            "schema": {
+              "type": "integer"
+            }
           },
           {
             "name": "year",
             "in": "path",
             "required": true,
-            "schema": { "type": "integer" }
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Final approval processed by HR"
+          }
+        }
+      }
+    },
+    "/api/bonus/approve/final/ceo/{sid}/{year}": {
+      "post": {
+        "tags": [
+          "Bonus Process"
+        ],
+        "summary": "Final Approval by CEO",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "year",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
           }
         ],
         "requestBody": {
@@ -320,7 +297,9 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "newQualification": { "type": "string" }
+                  "newQualification": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -328,7 +307,7 @@
         },
         "responses": {
           "200": {
-            "description": "Final approval processed and saved to HR"
+            "description": "Final approval processed by CEO and saved to HR"
           }
         }
       }
