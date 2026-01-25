@@ -154,4 +154,26 @@ async function getCrxIdByGovernmentId(governmentId) {
     return null;
 }
 
-module.exports = { getSalesDataForEmployee, getCrxIdByGovernmentId };
+// Also, we should think about the bonus calculation logic, for now it's a simple example
+const calculateOrderBonus = (order) => {
+    if(order.productName === "Hoover for big companies"){
+        const rankingFactor = ((6 - order.clientRanking) * 5); // Lower ranking means better client
+
+        const baseBonus = 100 / order.closingProbability;
+
+        const total = baseBonus * rankingFactor * (order.quantity / 2);
+
+        return Math.round(total);
+    } else {
+        const rankingFactor = ((6 - order.clientRanking) * 3);
+
+        const baseBonus = 100 / order.closingProbability;
+
+        const total = baseBonus * rankingFactor * (order.quantity / 2);
+
+        return Math.round(total);
+    }
+};
+
+
+module.exports = { getSalesDataForEmployee, getCrxIdByGovernmentId, calculateOrderBonus };

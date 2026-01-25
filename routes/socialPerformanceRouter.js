@@ -5,27 +5,25 @@ const Salesman = require('../models/Salesman');
 const SocialPerformance = require('../models/SocialPerformance');
 
 // --- MVP_FR2: For a given salesman, the social performance evaluation records must be managed (read and created). An individually computed bonus for a single record must be computed and displayed. ---
+// --- M_FR1: The total bonus of the social performance evaluation must be computed automatically and must be displayed. ---
+// --- M_FR2: Remarks to the bonus computation must be entered and stored for a single salesman.
 router.post('', async (req, res) => {
     try {
-        const recordData = req.body;
+        const { salesmanId, description, valueSupervisor, valuePeerGroup, year, remarks } = req.body;
 
-        const salesmanExists = await Salesman.findOne({ sid: recordData.salesmanId });
-        if (!salesmanExists) {
-            return res.status(404).json({ message: "Salesman not found" });
-        }
+        let bonusValue = (valueSupervisor + valuePeerGroup) * 30;// Simple bonus calculation logic, can be changed later
 
-        const bonusValue = (recordData.valueSupervisor + recordData.valuePeerGroup) * 100;
-
-        const newRecord = new SocialPerformance({
-            ...recordData,
-            bonusValue: bonusValue
+        const record = new SocialPerformance({
+            salesmanId, description, valueSupervisor, valuePeerGroup, year,
+            bonusValue,
+            remarks,
+            isApprovedByCEO: false
         });
 
-        const savedRecord = await newRecord.save();
-        res.status(201).json(savedRecord);
-
+        await record.save();
+        res.json(record);
     } catch (err) {
-        res.status(400).json({ message: err.message });
+        res.status(400).json({ error: err.message });
     }
 });
 

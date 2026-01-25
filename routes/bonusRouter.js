@@ -42,58 +42,37 @@ router.post('/integration/orangehrm/sync-employees', async (req, res) => {
     }
 });
 
-// --- M_FR1: The total bonus of the social performance evaluation must be computed automatically and must be displayed. ---
-// --- M_FR2: Remarks to the bonus computation must be entered and stored for a single salesman.
-router.post('/social-performance', async (req, res) => {
-    try {
-        const { salesmanId, description, valueSupervisor, valuePeerGroup, year, remarks } = req.body;
-
-        let bonusValue = (valueSupervisor + valuePeerGroup) * 100;// Simple bonus calculation logic, can be changed later
-
-        const record = new SocialPerformance({
-            salesmanId, description, valueSupervisor, valuePeerGroup, year,
-            bonusValue,
-            remarks,
-            isApprovedByCEO: false
-        });
-
-        await record.save();
-        res.json(record);
-    } catch (err) {
-        res.status(400).json({ error: err.message });
-    }
-});
-
 // --- M_FR4: The CEO must be involved in the process for fetching the data and for approving the bonus computation. ---
 // CEO approves bonus for a salesman for a given year (*need to be authenticated as CEO in future)
-router.post('/approve/:sid/:year', async (req, res) => {
-    const { sid, year } = req.params;
-
-    try {
-        const records = await SocialPerformance.find({ salesmanId: sid, year: year });
-
-        if (records.length === 0) return res.status(404).json({ msg: "No records found" });
-
-        const totalBonus = records.reduce((sum, record) => sum + record.bonusValue, 0);
-
-        await SocialPerformance.updateMany(
-            { salesmanId: sid, year: year },
-            { $set: { isApprovedByCEO: true } }
-        );
-
-        const hrmResult = await orangeHrmService.saveBonusToOrangeHRM(sid, totalBonus, year);
-
-        res.json({
-            message: "Bonus approved and sent to HR system",
-            salesmanId: sid,
-            totalBonus: totalBonus,
-            hrmSyncStatus: hrmResult
-        });
-
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
+// Note: This endpoint is now replaced by the final approval endpoint below
+// router.post('/approve/:sid/:year', async (req, res) => {
+//     const { sid, year } = req.params;
+//
+//     try {
+//         const records = await SocialPerformance.find({ salesmanId: sid, year: year });
+//
+//         if (records.length === 0) return res.status(404).json({ msg: "No records found" });
+//
+//         const totalBonus = records.reduce((sum, record) => sum + record.bonusValue, 0);
+//
+//         await SocialPerformance.updateMany(
+//             { salesmanId: sid, year: year },
+//             { $set: { isApprovedByCEO: true } }
+//         );
+//
+//         const hrmResult = await orangeHrmService.saveBonusToOrangeHRM(sid, totalBonus, year);
+//
+//         res.json({
+//             message: "Bonus approved and sent to HR system",
+//             salesmanId: sid,
+//             totalBonus: totalBonus,
+//             hrmSyncStatus: hrmResult
+//         });
+//
+//     } catch (err) {
+//         res.status(500).json({ error: err.message });
+//     }
+// });
 
 // --- C_FR1: The orders evaluation should be displayed for a given salesman together with the individually computed bonus for each sales order statement ---
 // --- C_FR4: The product names, client data, client ranking, closing probability, and the number of items should be fetched from OpenCRX ---
@@ -114,7 +93,7 @@ router.post('/orders/fetch/:sid/:year', async (req, res) => {
         const savedRecords = [];
 
         for (const order of crxOrders) {
-            const bonus = calculateOrderBonus(order);
+            const bonus = openCrxService.calculateOrderBonus(order);
 
             const record = await OrderPerformance.findOneAndUpdate(
                 { orderId: order.orderId },
@@ -177,12 +156,47 @@ router.get('/cockpit/:sid/:year', async (req, res) => {
     }
 });
 
+// --- C_FR5: Both the CEO and the HR assistant are involved in a process for approving the bonus computation ---
+// CEO endpoint for final approval of all bonuses for a salesman for a given year and also for fetching qualifications
+router.post('/approve/final/hr/:sid/:year', async (req, res) => {
+    const { sid, year } = req.params;
+
+    try {
+        const socialRecords = await SocialPerformance.find({ salesmanId: sid, year });
+        const orderRecords = await OrderPerformance.find({ salesmanId: sid, year });
+
+        const totalBonus =
+            socialRecords.reduce((s, r) => s + r.bonusValue, 0) +
+            orderRecords.reduce((s, r) => s + r.computedBonus, 0);
+
+        await OrderPerformance.updateMany({ salesmanId: sid, year }, { hrReviewStatus: true });
+
+        let bonusResult
+
+        if(orderRecords.filter(o => !o.ceoReviewStatus).length === 0){
+            bonusResult = await orangeHrmService.saveBonusToOrangeHRM(sid, totalBonus, year);
+        } else{
+            bonusResult = {success: "CEO review pending, bonus not sent to HRM"};
+        }
+
+
+
+        res.json({
+            status: "Approved",
+            finalBonus: totalBonus,
+            hrmBonusStatus: bonusResult,
+        });
+
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // --- C_FR3: The resulting total bonus resulting from both social performance and orders evaluation should be stored in OrangeHRM ---
 // --- C_FR5: Both the CEO and the HR assistant are involved in a process for approving the bonus computation ---
 // --- ???C_FR8: The qualifications of a salesman should be created by CEO. They should be stored in OrangeHRM ---
-
 // CEO endpoint for final approval of all bonuses for a salesman for a given year and also for fetching qualifications
-router.post('/approve/final/:sid/:year', async (req, res) => {
+router.post('/approve/final/ceo/:sid/:year', async (req, res) => {
     const { sid, year } = req.params;
     const { newQualification } = req.body; // I am not sure fully about it, but let's assume CEO can add new qualification
 
@@ -197,14 +211,24 @@ router.post('/approve/final/:sid/:year', async (req, res) => {
         await SocialPerformance.updateMany({ salesmanId: sid, year }, { isApprovedByCEO: true });
         await OrderPerformance.updateMany({ salesmanId: sid, year }, { ceoReviewStatus: true });
 
-        const bonusResult = await orangeHrmService.saveBonusToOrangeHRM(sid, totalBonus, year);
+        let bonusResult;
+        let qualResult
 
-        let qualResult = null;
-        if (newQualification) {
-            // Mocked for now
-            // qualResult = await orangeHrmService.addQualification(sid, newQualification);
-            qualResult = "Mock: Qualification added";
+        if(orderRecords.filter(o => !o.hrReviewStatus).length === 0){
+            bonusResult = await orangeHrmService.saveBonusToOrangeHRM(sid, totalBonus, year);
+
+            qualResult = null;
+            if (newQualification) {
+                // Mocked for now
+                // qualResult = await orangeHrmService.addQualification(sid, newQualification);
+                qualResult = "Mock: Qualification added";
+            }
+        } else{
+            bonusResult = {success: "HR review pending, bonus not sent to HRM"};
+            qualResult = null;
         }
+
+
 
         res.json({
             status: "Approved",
@@ -217,17 +241,5 @@ router.post('/approve/final/:sid/:year', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
-
-// Also, we should think about the bonus calculation logic, for now it's a simple example
-const calculateOrderBonus = (order) => {
-
-    const rankingFactor = 1 + (order.clientRanking * 0.15);
-
-    const baseBonus = order.amount * 0.05;
-
-    const total = baseBonus * rankingFactor;
-
-    return Math.round(total);
-};
 
 module.exports = router;
