@@ -174,17 +174,15 @@ router.post('/approve/final/hr/:sid/:year', async (req, res) => {
         let bonusResult
 
         if(orderRecords.filter(o => !o.ceoReviewStatus).length === 0){
-            bonusResult = await orangeHrmService.saveBonusToOrangeHRM(sid, totalBonus, year);
-        } else{
-            bonusResult = {success: "CEO review pending, bonus not sent to HRM"};
+            bonusResult = {success: "Bonus sent to salesman"};
+        } else {
+            bonusResult = {success: "CEO review pending, bonus not sent to salesman"};
         }
-
-
 
         res.json({
             status: "Approved",
             finalBonus: totalBonus,
-            hrmBonusStatus: bonusResult,
+            bonusStatus: bonusResult,
         });
 
     } catch (err) {
@@ -215,7 +213,7 @@ router.post('/approve/final/ceo/:sid/:year', async (req, res) => {
         let qualResult
 
         if(orderRecords.filter(o => !o.hrReviewStatus).length === 0){
-            bonusResult = await orangeHrmService.saveBonusToOrangeHRM(sid, totalBonus, year);
+            bonusResult = {success: "Bonus sent to salesman"};
 
             qualResult = null;
             if (newQualification) {
@@ -224,17 +222,69 @@ router.post('/approve/final/ceo/:sid/:year', async (req, res) => {
                 qualResult = "Mock: Qualification added";
             }
         } else{
-            bonusResult = {success: "HR review pending, bonus not sent to HRM"};
+            bonusResult = {success: "HR review pending, bonus not sent to salesman"};
             qualResult = null;
         }
-
-
 
         res.json({
             status: "Approved",
             finalBonus: totalBonus,
-            hrmBonusStatus: bonusResult,
+            bonusStatus: bonusResult,
             qualificationStatus: qualResult
+        });
+
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// --- N_FR4: The salesman can confirm the bonus computation in the end of the process. ---
+// Final approval endpoint for salesman to confirm or reject the computed bonus. Approval param is boolean 'true' or 'false'
+router.post('/approve/final/salesman/:sid/:year/:approval', async (req, res) => {
+    const { sid, year, approval } = req.params;
+
+    try {
+        const socialRecords = await SocialPerformance.find({ salesmanId: sid, year });
+        const orderRecords = await OrderPerformance.find({ salesmanId: sid, year });
+        let bonusResult
+
+        //Disapproval case
+        if(approval === 'false'){
+            await SocialPerformance.updateMany({ salesmanId: sid, year }, { isApprovedByCEO: false });
+            await OrderPerformance.updateMany({ salesmanId: sid, year }, {
+                ceoReviewStatus: false, hrReviewStatus: false});
+
+            bonusResult = {success: "Bonus disapproved by salesman, bonus sent back to HR and CEO"};
+            res.json({
+                status: "Disapproved",
+                finalBonus: 0,
+                hrmBonusStatus: bonusResult,
+            });
+            return
+        }
+
+        if(orderRecords.filter(o => !o.ceoReviewStatus).length !== 0 || orderRecords.filter(o => !o.hrReviewStatus).length !== 0){
+            bonusResult = {success: "Bonus not approved by CEO or HR, bonus not sent to HRM"};
+            res.json({
+                status: "Rejected",
+                finalBonus: 0,
+                hrmBonusStatus: bonusResult,
+            }).status(400);
+            return
+        }
+
+        const totalBonus =
+            socialRecords.reduce((s, r) => s + r.bonusValue, 0) +
+            orderRecords.reduce((s, r) => s + r.computedBonus, 0);
+
+        await OrderPerformance.updateMany({ salesmanId: sid, year }, { isApproved: true });
+
+        bonusResult = await orangeHrmService.saveBonusToOrangeHRM(sid, totalBonus, year);
+
+        res.json({
+            status: "Approved",
+            finalBonus: totalBonus,
+            bonusStatus: bonusResult,
         });
 
     } catch (err) {

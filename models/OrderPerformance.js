@@ -17,7 +17,8 @@ const orderPerformanceSchema = new mongoose.Schema({
     computedBonus: { type: Number, default: 0 },
 
     hrReviewStatus: { type: Boolean, default: false },
-    ceoReviewStatus: { type: Boolean, default: false }
+    ceoReviewStatus: { type: Boolean, default: false },
+    isApproved: { type: Boolean, default: false }
 });
 
 module.exports = mongoose.model('OrderPerformance', orderPerformanceSchema);
