@@ -232,6 +232,30 @@
         }
       },
       "response": []
+    },
+    {
+      "name": "(Salesman) Approve Total Bonus (Final)",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/bonus/approve/final/salesman/7/2022/false",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "bonus",
+            "approve",
+            "final",
+            "salesman",
+            "7",
+            "2022",
+            "false"
+          ]
+        }
+      },
+      "response": []
     }
   ]
 }

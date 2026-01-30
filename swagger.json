@@ -307,7 +307,46 @@
         },
         "responses": {
           "200": {
-            "description": "Final approval processed by CEO and saved to HR"
+            "description": "Final approval processed by CEO and sent to Salesman"
+          }
+        }
+      }
+    },
+    "/api/bonus/approve/final/salesman/{sid}/{year}/{approval}": {
+      "post": {
+        "tags": [
+          "Bonus Process"
+        ],
+        "summary": "Final Approval by Salesman",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "year",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "approval",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Final approval processed by Salesman and saved to HR"
           }
         }
       }
