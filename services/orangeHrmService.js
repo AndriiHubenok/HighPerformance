@@ -58,4 +58,21 @@ async function saveBonusToOrangeHRM(employeeId, bonusAmount, year) {
     }
 }
 
-module.exports = { getAllEmployees, saveBonusToOrangeHRM };
+async function saveQualificationToOrangeHRM(employeeId, title, comment, company) {
+    const token = await getAccessToken();
+    try {
+        const response = await axios.post(`${BASE_URL}/api/v1/employee/${employeeId}/work-experience`, {
+            title,
+            comment,
+            company
+        }, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Failed to add qualification:", error.response ? error.response.data : error.message);
+        throw new Error("Failed to add qualification");
+    }
+}
+
+module.exports = { getAllEmployees, saveBonusToOrangeHRM, saveQualificationToOrangeHRM };

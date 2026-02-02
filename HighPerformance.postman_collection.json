@@ -75,7 +75,7 @@
         "header": [],
         "body": {
           "mode": "raw",
-          "raw": "{\r\n    \"salesmanId\": 7,\r\n    \"description\": \"Great performance\",\r\n    \"valueSupervisor\": 5,\r\n    \"valuePeerGroup\": 5,\r\n    \"year\": 2022,\r\n    \"remarks\": \"Thank you\"\r\n}",
+          "raw": "{\r\n    \"salesmanId\": 7,\r\n    \"description\": \"Great performance\",\r\n    \"valueSupervisor\": 4,\r\n    \"valuePeerGroup\": 5,\r\n    \"year\": 2022,\r\n    \"remarks\": \"Thank you\"\r\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -208,7 +208,7 @@
         "header": [],
         "body": {
           "mode": "raw",
-          "raw": "{\r\n    \"qualification\": \"Empathy\"\r\n}",
+          "raw": "{\r\n    \"qualification\": \"Senior Salesman\"\r\n}",
           "options": {
             "raw": {
               "language": "json"

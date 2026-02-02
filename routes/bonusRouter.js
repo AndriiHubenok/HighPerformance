@@ -4,6 +4,7 @@ const router = express.Router();
 const Salesman = require('../models/Salesman');
 const OrderPerformance = require('../models/OrderPerformance');
 const SocialPerformance = require('../models/SocialPerformance');
+const Qualification = require('../models/Qualification');
 const orangeHrmService = require('../services/orangeHrmService');
 const openCrxService = require('../services/openCrxService');
 
@@ -129,6 +130,7 @@ router.post('/orders/fetch/:sid/:year', async (req, res) => {
 
 // --- C_FR2: For a given salesman, the total bonus should be displayed based on the orders evaluation ---
 // --- C_FR6: The salesman can see the bonus computation in the end of the process ---
+// --- C_FR9: Salesman can see qualific. at the end ---
 // We simply calculate and return total bonuses from social performance without saving
 router.get('/cockpit/:sid/:year', async (req, res) => {
     try {
@@ -142,14 +144,15 @@ router.get('/cockpit/:sid/:year', async (req, res) => {
 
         const totalBonus = socialTotal + ordersTotal;
 
+        const qualifications = await Qualification.find({ salesmanId: sid, year });
+
         res.json({
             salesmanId: sid,
             year: year,
             socialBonus: { total: socialTotal, details: socialRecords },
             ordersBonus: { total: ordersTotal, details: orderRecords },
             grandTotal: totalBonus,
-            // For now this is mocked, in future I will think about this one
-            qualifications: ["Java Certified", "Negotiation Master"]
+            qualifications: qualifications
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -192,11 +195,11 @@ router.post('/approve/final/hr/:sid/:year', async (req, res) => {
 
 // --- C_FR3: The resulting total bonus resulting from both social performance and orders evaluation should be stored in OrangeHRM ---
 // --- C_FR5: Both the CEO and the HR assistant are involved in a process for approving the bonus computation ---
-// --- ???C_FR8: The qualifications of a salesman should be created by CEO. They should be stored in OrangeHRM ---
+// --- C_FR8: The qualifications of a salesman should be created by CEO. They should be stored in OrangeHRM ---
 // CEO endpoint for final approval of all bonuses for a salesman for a given year and also for fetching qualifications
 router.post('/approve/final/ceo/:sid/:year', async (req, res) => {
     const { sid, year } = req.params;
-    const { newQualification } = req.body; // I am not sure fully about it, but let's assume CEO can add new qualification
+    const { qualification } = req.body; // I am not sure fully about it, but let's assume CEO can add new qualification
 
     try {
         const socialRecords = await SocialPerformance.find({ salesmanId: sid, year });
@@ -209,18 +212,22 @@ router.post('/approve/final/ceo/:sid/:year', async (req, res) => {
         await SocialPerformance.updateMany({ salesmanId: sid, year }, { isApprovedByCEO: true });
         await OrderPerformance.updateMany({ salesmanId: sid, year }, { ceoReviewStatus: true });
 
+        let qualResult = null;
+        if (qualification) {
+            const newQualification = new Qualification({
+                salesmanId: sid,
+                company: 'SmartHoover',
+                title: 'Salesman',
+                year: year,
+                comment: qualification
+            });
+            qualResult = await newQualification.save();
+        }
+
         let bonusResult;
-        let qualResult
 
         if(orderRecords.filter(o => !o.hrReviewStatus).length === 0){
             bonusResult = {success: "Bonus sent to salesman"};
-
-            qualResult = null;
-            if (newQualification) {
-                // Mocked for now
-                // qualResult = await orangeHrmService.addQualification(sid, newQualification);
-                qualResult = "Mock: Qualification added";
-            }
         } else{
             bonusResult = {success: "HR review pending, bonus not sent to salesman"};
             qualResult = null;
@@ -248,17 +255,19 @@ router.post('/approve/final/salesman/:sid/:year/:approval', async (req, res) => 
         const orderRecords = await OrderPerformance.find({ salesmanId: sid, year });
         let bonusResult
 
-        //Disapproval case
+        // Disapproval case
         if(approval === 'false'){
             await SocialPerformance.updateMany({ salesmanId: sid, year }, { isApprovedByCEO: false });
             await OrderPerformance.updateMany({ salesmanId: sid, year }, {
                 ceoReviewStatus: false, hrReviewStatus: false});
 
+            await Qualification.deleteMany({ salesmanId: sid, year })
+
             bonusResult = {success: "Bonus disapproved by salesman, bonus sent back to HR and CEO"};
             res.json({
                 status: "Disapproved",
                 finalBonus: 0,
-                hrmBonusStatus: bonusResult,
+                hrmBonusStatus: bonusResult
             });
             return
         }
@@ -281,10 +290,17 @@ router.post('/approve/final/salesman/:sid/:year/:approval', async (req, res) => 
 
         bonusResult = await orangeHrmService.saveBonusToOrangeHRM(sid, totalBonus, year);
 
+        const qualifications = await Qualification.find({ salesmanId: sid, year });
+        let qualificationResult= [];
+        for(const qualification of qualifications) {
+            qualificationResult.push(await orangeHrmService.saveQualificationToOrangeHRM(sid, qualification.title, qualification.comment, qualification.company));
+        }
+
         res.json({
             status: "Approved",
             finalBonus: totalBonus,
             bonusStatus: bonusResult,
+            qualificationResult: qualificationResult
         });
 
     } catch (err) {
