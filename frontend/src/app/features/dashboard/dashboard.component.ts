@@ -4,11 +4,10 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { NgxChartsModule } from '@swimlane/ngx-charts';
-import { SalesmanService, BonusService } from '../../core/services';
+import { SalesmanService, BonusService, DashboardStats } from '../../core/services';
 import { Salesman } from '../../core/models';
 import { slideInAnimation, listAnimation } from '../../shared/animations';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
-import { forkJoin } from 'rxjs';
 
 interface StatCard {
   title: string;
@@ -33,6 +32,7 @@ interface StatCard {
   animations: [slideInAnimation, listAnimation],
   template: `
     <div class="dashboard" @slideIn>
+
       <!-- Stats Cards -->
       <section class="stats-section" [@listAnimation]="stats().length">
         @if (loading()) {
@@ -65,7 +65,7 @@ interface StatCard {
       <section class="charts-section">
         <mat-card class="chart-card">
           <mat-card-header>
-            <mat-card-title>Performance Overview</mat-card-title>
+            <mat-card-title>Bonus by Salesman</mat-card-title>
           </mat-card-header>
           <mat-card-content>
             @if (loading()) {
@@ -78,8 +78,8 @@ interface StatCard {
                 [legend]="true"
                 [showXAxisLabel]="true"
                 [showYAxisLabel]="true"
-                xAxisLabel="Salesman"
-                yAxisLabel="Performance Score"
+                xAxisLabel="Bonus Type"
+                yAxisLabel="Bonus Amount"
                 [gradient]="true"
                 [animations]="true"
                 [scheme]="colorScheme">
@@ -156,6 +156,7 @@ interface StatCard {
       flex-direction: column;
       gap: 24px;
     }
+
 
     .stats-section {
       display: grid;
@@ -327,6 +328,7 @@ interface StatCard {
     }
 
     :host-context(.dark-theme) {
+
       .stat-card {
         background: #1e1e2d;
         border-color: rgba(255, 255, 255, 0.1);
@@ -365,6 +367,52 @@ interface StatCard {
       .salesman-item:hover {
         background: rgba(255, 255, 255, 0.05);
       }
+
+      /* ngx-charts dark theme styles */
+      ::ng-deep {
+        .ngx-charts {
+          text {
+            fill: #e2e8f0 !important;
+          }
+
+          .tick text {
+            fill: #94a3b8 !important;
+          }
+
+          .gridline-path {
+            stroke: rgba(255, 255, 255, 0.1) !important;
+          }
+
+          .legend-labels {
+            background: transparent !important;
+          }
+
+          .legend-label-text {
+            color: #e2e8f0 !important;
+          }
+
+          .legend-title-text {
+            color: #e2e8f0 !important;
+          }
+
+          .x.axis .tick text,
+          .y.axis .tick text {
+            fill: #94a3b8 !important;
+          }
+
+          .axis-label {
+            fill: #e2e8f0 !important;
+          }
+
+          .pie-label {
+            fill: #e2e8f0 !important;
+          }
+
+          .arc-label-text {
+            fill: #1e1e2d !important;
+          }
+        }
+      }
     }
 
     @media (max-width: 768px) {
@@ -397,69 +445,127 @@ export class DashboardComponent implements OnInit {
   private loadDashboardData(): void {
     this.loading.set(true);
 
-    this.salesmanService.getSalesmen().subscribe({
-      next: (salesmen) => {
-        this.recentSalesmen.set(salesmen.slice(0, 5));
+    this.bonusService.getDashboardStats().subscribe({
+      next: (data: DashboardStats) => {
 
-        // Generate stats
+        // Set recent salesmen
+        this.recentSalesmen.set(data.recentSalesmen.slice(0, 5));
+
+        // Generate stats from real data
         this.stats.set([
           {
             title: 'Total Salesmen',
-            value: salesmen.length,
+            value: data.stats.totalSalesmen,
             icon: 'people',
-            color: '#60a5fa',
-            change: 12
+            color: '#60a5fa'
           },
           {
             title: 'Active This Year',
-            value: salesmen.filter(s => s.yearOfPerformance === new Date().getFullYear()).length,
+            value: data.stats.activeThisYear,
             icon: 'trending_up',
-            color: '#34d399',
-            change: 8
+            color: '#34d399'
           },
           {
             title: 'Departments',
-            value: new Set(salesmen.map(s => s.department)).size,
+            value: data.stats.departmentsCount,
             icon: 'business',
             color: '#a78bfa'
           },
           {
             title: 'Avg Performance',
-            value: '87%',
+            value: data.stats.avgPerformance > 0 ? `${data.stats.avgPerformance}` : 'N/A',
             icon: 'analytics',
-            color: '#fbbf24',
-            change: 5
+            color: '#fbbf24'
           }
         ]);
 
-        // Generate chart data
-        this.performanceData.set([
-          {
-            name: 'Q1',
-            series: salesmen.slice(0, 3).map(s => ({
-              name: `${s.firstname} ${s.lastname}`,
-              value: Math.floor(Math.random() * 50) + 50
-            }))
-          },
-          {
-            name: 'Q2',
-            series: salesmen.slice(0, 3).map(s => ({
-              name: `${s.firstname} ${s.lastname}`,
-              value: Math.floor(Math.random() * 50) + 50
-            }))
-          }
-        ]);
+        // Generate performance chart data from real data
+        const performanceChartData = data.performanceByPerson.length > 0
+          ? [
+              {
+                name: 'Social Bonus',
+                series: data.performanceByPerson.map(p => ({
+                  name: p.name,
+                  value: p.socialBonus
+                }))
+              },
+              {
+                name: 'Order Bonus',
+                series: data.performanceByPerson.map(p => ({
+                  name: p.name,
+                  value: p.orderBonus
+                }))
+              }
+            ]
+          : [
+              {
+                name: 'Social Bonus',
+                series: [{ name: 'No Data', value: 0 }]
+              },
+              {
+                name: 'Order Bonus',
+                series: [{ name: 'No Data', value: 0 }]
+              }
+            ];
 
-        this.bonusDistribution.set([
-          { name: 'Social Bonus', value: 35000 },
-          { name: 'Order Bonus', value: 45000 },
-          { name: 'Performance Bonus', value: 20000 }
-        ]);
+        this.performanceData.set(performanceChartData);
+
+        // Set bonus distribution from real data
+        const hasBonusData = data.bonusDistribution.some(b => b.value > 0);
+        this.bonusDistribution.set(
+          hasBonusData
+            ? data.bonusDistribution
+            : [{ name: 'No Bonus Data', value: 1 }]
+        );
 
         this.loading.set(false);
       },
       error: () => {
-        this.loading.set(false);
+        // Fallback to salesmen only if stats API fails
+        this.salesmanService.getSalesmen().subscribe({
+          next: (salesmen) => {
+            this.recentSalesmen.set(salesmen.slice(0, 5));
+
+            this.stats.set([
+              {
+                title: 'Total Salesmen',
+                value: salesmen.length,
+                icon: 'people',
+                color: '#60a5fa'
+              },
+              {
+                title: 'Active This Year',
+                value: salesmen.filter(s => s.yearOfPerformance === new Date().getFullYear()).length,
+                icon: 'trending_up',
+                color: '#34d399'
+              },
+              {
+                title: 'Departments',
+                value: new Set(salesmen.map(s => s.department)).size,
+                icon: 'business',
+                color: '#a78bfa'
+              },
+              {
+                title: 'Avg Performance',
+                value: 'N/A',
+                icon: 'analytics',
+                color: '#fbbf24'
+              }
+            ]);
+
+            this.performanceData.set([
+              { name: 'Social Bonus', series: [{ name: 'No Data', value: 0 }] },
+              { name: 'Order Bonus', series: [{ name: 'No Data', value: 0 }] }
+            ]);
+
+            this.bonusDistribution.set([{ name: 'No Bonus Data', value: 1 }]);
+
+            this.loading.set(false);
+          },
+          error: () => {
+            this.loading.set(false);
+          }
+        });
       }
     });
   }
