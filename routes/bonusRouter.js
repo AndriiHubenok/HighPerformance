@@ -308,4 +308,81 @@ router.post('/approve/final/salesman/:sid/:year/:approval', async (req, res) => 
     }
 });
 
+// Dashboard statistics endpoint - returns aggregated real data
+router.get('/dashboard/stats', async (req, res) => {
+    try {
+        const currentYear = new Date().getFullYear();
+
+        // Get all salesmen
+        const salesmen = await Salesman.find({});
+
+        // Get all social performance records
+        const socialRecords = await SocialPerformance.find({});
+
+        // Get all order performance records
+        const orderRecords = await OrderPerformance.find({});
+
+        // Calculate totals
+        const totalSocialBonus = socialRecords.reduce((sum, r) => sum + (r.bonusValue || 0), 0);
+        const totalOrderBonus = orderRecords.reduce((sum, r) => sum + (r.computedBonus || 0), 0);
+
+        // Get unique departments
+        const departments = [...new Set(salesmen.map(s => s.department).filter(Boolean))];
+
+        // Active this year
+        const activeThisYear = salesmen.filter(s => s.yearOfPerformance === currentYear).length;
+
+        // Performance data by salesman (for bar chart)
+        const performanceByPerson = await Promise.all(
+            salesmen.slice(0, 5).map(async (salesman) => {
+                const socialSum = socialRecords
+                    .filter(r => r.salesmanId === salesman.sid)
+                    .reduce((sum, r) => sum + (r.bonusValue || 0), 0);
+
+                const orderSum = orderRecords
+                    .filter(r => r.salesmanId === salesman.sid)
+                    .reduce((sum, r) => sum + (r.computedBonus || 0), 0);
+
+                return {
+                    name: `${salesman.firstname || ''} ${salesman.lastname || ''}`.trim() || `ID: ${salesman.sid}`,
+                    socialBonus: socialSum,
+                    orderBonus: orderSum,
+                    totalBonus: socialSum + orderSum
+                };
+            })
+        );
+
+        // Bonus distribution (for pie chart)
+        const bonusDistribution = [
+            { name: 'Social Bonus', value: totalSocialBonus },
+            { name: 'Order Bonus', value: totalOrderBonus }
+        ];
+
+        // Average performance score (based on supervisor and peer values)
+        const avgPerformance = socialRecords.length > 0
+            ? Math.round(
+                socialRecords.reduce((sum, r) => sum + ((r.valueSupervisor + r.valuePeerGroup) / 2), 0) / socialRecords.length
+            )
+            : 0;
+
+        res.json({
+            stats: {
+                totalSalesmen: salesmen.length,
+                activeThisYear: activeThisYear,
+                departmentsCount: departments.length,
+                avgPerformance: avgPerformance,
+                totalSocialBonus: totalSocialBonus,
+                totalOrderBonus: totalOrderBonus,
+                grandTotalBonus: totalSocialBonus + totalOrderBonus
+            },
+            performanceByPerson: performanceByPerson.filter(p => p.totalBonus > 0 || p.name),
+            bonusDistribution: bonusDistribution,
+            recentSalesmen: salesmen.slice(0, 5)
+        });
+
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;

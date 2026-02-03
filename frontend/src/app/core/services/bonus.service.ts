@@ -3,12 +3,39 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { BonusCockpit, OrderPerformance, SocialPerformanceInput } from '../models';
 
+export interface DashboardStats {
+  stats: {
+    totalSalesmen: number;
+    activeThisYear: number;
+    departmentsCount: number;
+    avgPerformance: number;
+    totalSocialBonus: number;
+    totalOrderBonus: number;
+    grandTotalBonus: number;
+  };
+  performanceByPerson: {
+    name: string;
+    socialBonus: number;
+    orderBonus: number;
+    totalBonus: number;
+  }[];
+  bonusDistribution: {
+    name: string;
+    value: number;
+  }[];
+  recentSalesmen: any[];
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class BonusService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = '/api/bonus';
+
+  getDashboardStats(): Observable<DashboardStats> {
+    return this.http.get<DashboardStats>(`${this.baseUrl}/dashboard/stats`);
+  }
 
   syncEmployeesFromOrangeHRM(): Observable<{ message: string }> {
     return this.http.post<{ message: string }>(`${this.baseUrl}/integration/orangehrm/sync-employees`, {});
