@@ -115,6 +115,34 @@
       "response": []
     },
     {
+      "name": "(HR) Update Social Performance",
+      "request": {
+        "method": "PUT",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"description\": \"Great discipline\",\r\n    \"valueSupervisor\": 4,\r\n    \"valuePeerGroup\": 4\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/social-performance/69763785117f823f53511367",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "social-performance",
+            "69763785117f823f53511367"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
       "name": "Syncronize Salesmen from OrangeHRM",
       "request": {
         "method": "POST",

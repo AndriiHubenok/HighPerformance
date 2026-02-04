@@ -11,7 +11,7 @@ router.post('', async (req, res) => {
     try {
         const { salesmanId, description, valueSupervisor, valuePeerGroup, year, remarks } = req.body;
 
-        let bonusValue = (valueSupervisor + valuePeerGroup) * 30;// Simple bonus calculation logic, can be changed later
+        let bonusValue = (valueSupervisor + valuePeerGroup) * 30; // Simple bonus calculation logic, can be changed later
 
         const record = new SocialPerformance({
             salesmanId, description, valueSupervisor, valuePeerGroup, year,
@@ -34,6 +34,46 @@ router.get('/:sid', async (req, res) => {
         res.json(records);
     } catch (err) {
         res.status(500).json({ message: err.message });
+    }
+});
+
+// --- N_FR5: HR can edit social-performance parameters ---
+router.put('/:recordId', async (req, res) => {
+    try {
+        const { recordId } = req.params;
+        const { valueSupervisor, valuePeerGroup, description } = req.body;
+
+        const record = await SocialPerformance.findById(recordId);
+        if (!record) {
+            return res.status(404).json({ message: "Performance record not found" });
+        }
+
+        if (description !== undefined) record.description = description;
+
+        let valuesChanged = false;
+        if (valueSupervisor !== undefined) {
+            record.valueSupervisor = valueSupervisor;
+            valuesChanged = true;
+        }
+        if (valuePeerGroup !== undefined) {
+            record.valuePeerGroup = valuePeerGroup;
+            valuesChanged = true;
+        }
+
+        if (valuesChanged) {
+            record.bonusValue = (valueSupervisor + valuePeerGroup) * 30;
+            record.isApprovedByCEO = false;
+        }
+
+        const updatedRecord = await record.save();
+
+        res.json({
+            message: "Record updated successfully",
+            data: updatedRecord
+        });
+
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
