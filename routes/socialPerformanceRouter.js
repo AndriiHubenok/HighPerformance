@@ -77,4 +77,25 @@ router.put('/:recordId', async (req, res) => {
     }
 });
 
+router.delete('/:recordId', async (req, res) => {
+    try {
+        const { recordId } = req.params;
+
+        const record = await SocialPerformance.findById(recordId);
+        if (!record) {
+            return res.status(404).json({ message: "Performance record not found" });
+        }
+
+        const deletedRecord = await SocialPerformance.deleteOne(record);
+
+        res.json({
+            message: "Record deleted successfully",
+            data: deletedRecord
+        });
+
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;
