@@ -3,11 +3,12 @@ const router = express.Router();
 
 const Salesman = require('../models/Salesman');
 const SocialPerformance = require('../models/SocialPerformance');
+const {verifyToken, requireRole} = require("../middleware/auth");
 
 // --- MVP_FR2: For a given salesman, the social performance evaluation records must be managed (read and created). An individually computed bonus for a single record must be computed and displayed. ---
 // --- M_FR1: The total bonus of the social performance evaluation must be computed automatically and must be displayed. ---
 // --- M_FR2: Remarks to the bonus computation must be entered and stored for a single salesman.
-router.post('', async (req, res) => {
+router.post('', verifyToken, requireRole(['CEO']), async (req, res) => {
     try {
         const { salesmanId, description, valueSupervisor, valuePeerGroup, year, remarks } = req.body;
 
@@ -28,7 +29,7 @@ router.post('', async (req, res) => {
 });
 
 // Get social performance records by salesman ID
-router.get('/:sid', async (req, res) => {
+router.get('/:sid', verifyToken, requireRole(['HR', 'CEO', 'SALESMAN']), async (req, res) => {
     try {
         const records = await SocialPerformance.find({ salesmanId: req.params.sid });
         res.json(records);
@@ -38,7 +39,7 @@ router.get('/:sid', async (req, res) => {
 });
 
 // --- N_FR5: HR can edit social-performance parameters ---
-router.put('/:recordId', async (req, res) => {
+router.put('/:recordId', verifyToken, requireRole(['HR']), async (req, res) => {
     try {
         const { recordId } = req.params;
         const { valueSupervisor, valuePeerGroup, description } = req.body;
@@ -77,7 +78,7 @@ router.put('/:recordId', async (req, res) => {
     }
 });
 
-router.delete('/:recordId', async (req, res) => {
+router.delete('/:recordId', verifyToken, requireRole(['CEO']), async (req, res) => {
     try {
         const { recordId } = req.params;
 

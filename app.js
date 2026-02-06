@@ -4,6 +4,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 
+const authRoutes = require('./routes/authRoutes');
 const salesmanRouter = require('./routes/salesmanRouter');
 const socialPerformanceRouter = require('./routes/socialPerformanceRouter');
 const bonusRouter = require('./routes/bonusRouter');
@@ -13,6 +14,7 @@ app.use(bodyParser.json());
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
+app.use('/api/auth', authRoutes);
 app.use('/api/salesmen', salesmanRouter)
 app.use('/api/social-performance', socialPerformanceRouter)
 app.use('/api/bonus', bonusRouter)

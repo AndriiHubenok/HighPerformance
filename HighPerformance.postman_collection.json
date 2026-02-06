@@ -24,6 +24,174 @@
       "response": []
     },
     {
+      "name": "Register CEO",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"username\": \"CEO\",\r\n    \"password\": \"123456\",\r\n    \"role\": \"CEO\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/register",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "register"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Login CEO",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"username\": \"CEO\",\r\n    \"password\": \"123456\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/login",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Register HR",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"username\": \"HR\",\r\n    \"password\": \"123456\",\r\n    \"role\": \"HR\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/register",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "register"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Login HR",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"username\": \"HR\",\r\n    \"password\": \"123456\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/login",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Register Salesman",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"username\": \"Salesman_John\",\r\n    \"password\": \"123456\",\r\n    \"role\": \"SALESMAN\",\r\n    \"linkedSalesmanId\": 7\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/register",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "register"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Login Salesman",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"username\": \"Salesman_John\",\r\n    \"password\": \"123456\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/login",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
       "name": "Create Salesman",
       "request": {
         "method": "POST",
@@ -228,8 +396,27 @@
     {
       "name": "(HR) Approve Total Bonus",
       "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ODVlNThlZWZjN2U3M2JjODhlODMwOCIsInJvbGUiOiJTQUxFU01BTiIsImxpbmtlZFNhbGVzbWFuSWQiOjcsImlhdCI6MTc3MDM4Mjc1NiwiZXhwIjoxNzcwNDY5MTU2fQ.YVLI7bzjR3bqnabu2uPFV1brtwbK1y-AZynD-fi_F6k",
+              "type": "string"
+            }
+          ]
+        },
         "method": "POST",
         "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
         "url": {
           "raw": "{{base_url}}/api/bonus/approve/final/hr/7/2022",
           "host": [
@@ -251,6 +438,16 @@
     {
       "name": "(CEO) Approve Total Bonus",
       "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ODVlM2E2ZWZjN2U3M2JjODhlODMwMCIsInJvbGUiOiJIUiIsImlhdCI6MTc3MDM4MjMxOSwiZXhwIjoxNzcwNDY4NzE5fQ.4UVXhQ2e_8k8EYq8Mfy5TRV7zeiKtGcB-5ioa69fat8",
+              "type": "string"
+            }
+          ]
+        },
         "method": "POST",
         "header": [],
         "body": {
@@ -283,6 +480,16 @@
     {
       "name": "(Salesman) Approve Total Bonus (Final)",
       "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ODVlNThlZWZjN2U3M2JjODhlODMwOCIsInJvbGUiOiJTQUxFU01BTiIsImxpbmtlZFNhbGVzbWFuSWQiOjcsImlhdCI6MTc3MDM4Mjc1NiwiZXhwIjoxNzcwNDY5MTU2fQ.YVLI7bzjR3bqnabu2uPFV1brtwbK1y-AZynD-fi_F6k",
+              "type": "string"
+            }
+          ]
+        },
         "method": "POST",
         "header": [],
         "url": {
@@ -299,6 +506,36 @@
             "7",
             "2022",
             "false"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Stats",
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ODVlNThlZWZjN2U3M2JjODhlODMwOCIsInJvbGUiOiJTQUxFU01BTiIsImxpbmtlZFNhbGVzbWFuSWQiOjcsImlhdCI6MTc3MDM4Mjc1NiwiZXhwIjoxNzcwNDY5MTU2fQ.YVLI7bzjR3bqnabu2uPFV1brtwbK1y-AZynD-fi_F6k",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/bonus/dashboard/stats",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "bonus",
+            "dashboard",
+            "stats"
           ]
         }
       },

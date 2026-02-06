@@ -2,10 +2,11 @@ const express = require('express');
 const router = express.Router();
 
 const Salesman = require('../models/Salesman');
+const {verifyToken, requireRole} = require("../middleware/auth");
 
 
 // --- MVP_FR1: Basic master data of a salesman (name, employee ID, department, year of performance) must be managed (created and read). ---
-router.post('', async (req, res) => {
+router.post('', verifyToken, requireRole(['HR', 'CEO']), async (req, res) => {
     try {
         const salesman = new Salesman(req.body);
         const savedSalesman = await salesman.save();
@@ -16,7 +17,7 @@ router.post('', async (req, res) => {
 });
 
 // We can use query parameters to filter by sid and yearOfPerformance but both are optional
-router.get('', async (req, res) => {
+router.get('', verifyToken, requireRole(['HR', 'CEO', 'SALESMAN']), async (req, res) => {
     try {
         const query = {};
         if (req.query.sid) query.sid = req.query.sid;

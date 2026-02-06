@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
+const { verifyToken, requireRole } = require('../middleware/auth');
 const Salesman = require('../models/Salesman');
 const OrderPerformance = require('../models/OrderPerformance');
 const SocialPerformance = require('../models/SocialPerformance');
@@ -10,7 +11,7 @@ const openCrxService = require('../services/openCrxService');
 
 // --- M_FR5: The master data of a salesman (cf. first box in the bonus computation sheet) should be read from OrangeHRM. ---
 // Before starting work, we pull data from OrangeHRM into the database with this endpoint
-router.post('/integration/orangehrm/sync-employees', async (req, res) => {
+router.post('/integration/orangehrm/sync-employees', verifyToken, requireRole(['HR', 'CEO']), async (req, res) => {
     try {
         let employees = await orangeHrmService.getAllEmployees()
         employees = employees.filter(emp =>{
@@ -43,43 +44,11 @@ router.post('/integration/orangehrm/sync-employees', async (req, res) => {
     }
 });
 
-// --- M_FR4: The CEO must be involved in the process for fetching the data and for approving the bonus computation. ---
-// CEO approves bonus for a salesman for a given year (*need to be authenticated as CEO in future)
-// Note: This endpoint is now replaced by the final approval endpoint below
-// router.post('/approve/:sid/:year', async (req, res) => {
-//     const { sid, year } = req.params;
-//
-//     try {
-//         const records = await SocialPerformance.find({ salesmanId: sid, year: year });
-//
-//         if (records.length === 0) return res.status(404).json({ msg: "No records found" });
-//
-//         const totalBonus = records.reduce((sum, record) => sum + record.bonusValue, 0);
-//
-//         await SocialPerformance.updateMany(
-//             { salesmanId: sid, year: year },
-//             { $set: { isApprovedByCEO: true } }
-//         );
-//
-//         const hrmResult = await orangeHrmService.saveBonusToOrangeHRM(sid, totalBonus, year);
-//
-//         res.json({
-//             message: "Bonus approved and sent to HR system",
-//             salesmanId: sid,
-//             totalBonus: totalBonus,
-//             hrmSyncStatus: hrmResult
-//         });
-//
-//     } catch (err) {
-//         res.status(500).json({ error: err.message });
-//     }
-// });
-
 // --- C_FR1: The orders evaluation should be displayed for a given salesman together with the individually computed bonus for each sales order statement ---
 // --- C_FR4: The product names, client data, client ranking, closing probability, and the number of items should be fetched from OpenCRX ---
 // --- C_FR7: The bonus computations should be stored persistently, so that it can be retrieved later from both HR assistant and CEO ---
 // Process of fetching orders from OpenCRX, computing bonuses and save it to DB
-router.post('/orders/fetch/:sid/:year', async (req, res) => {
+router.post('/orders/fetch/:sid/:year', verifyToken, requireRole(['HR', 'CEO']), async (req, res) => {
     try {
         const { sid, year } = req.params;
 
@@ -132,7 +101,7 @@ router.post('/orders/fetch/:sid/:year', async (req, res) => {
 // --- C_FR6: The salesman can see the bonus computation in the end of the process ---
 // --- C_FR9: Salesman can see qualific. at the end ---
 // We simply calculate and return total bonuses from social performance without saving
-router.get('/cockpit/:sid/:year', async (req, res) => {
+router.get('/cockpit/:sid/:year', verifyToken, requireRole(['HR', 'CEO', 'SALESMAN']), async (req, res) => {
     try {
         const { sid, year } = req.params;
 
@@ -161,7 +130,7 @@ router.get('/cockpit/:sid/:year', async (req, res) => {
 
 // --- C_FR5: Both the CEO and the HR assistant are involved in a process for approving the bonus computation ---
 // CEO endpoint for final approval of all bonuses for a salesman for a given year and also for fetching qualifications
-router.post('/approve/final/hr/:sid/:year', async (req, res) => {
+router.post('/approve/final/hr/:sid/:year', verifyToken, requireRole(['HR']), async (req, res) => {
     const { sid, year } = req.params;
 
     try {
@@ -197,7 +166,7 @@ router.post('/approve/final/hr/:sid/:year', async (req, res) => {
 // --- C_FR5: Both the CEO and the HR assistant are involved in a process for approving the bonus computation ---
 // --- C_FR8: The qualifications of a salesman should be created by CEO. They should be stored in OrangeHRM ---
 // CEO endpoint for final approval of all bonuses for a salesman for a given year and also for fetching qualifications
-router.post('/approve/final/ceo/:sid/:year', async (req, res) => {
+router.post('/approve/final/ceo/:sid/:year', verifyToken, requireRole(['CEO']), async (req, res) => {
     const { sid, year } = req.params;
     const { qualification } = req.body; // I am not sure fully about it, but let's assume CEO can add new qualification
 
@@ -247,7 +216,7 @@ router.post('/approve/final/ceo/:sid/:year', async (req, res) => {
 
 // --- N_FR4: The salesman can confirm the bonus computation in the end of the process. ---
 // Final approval endpoint for salesman to confirm or reject the computed bonus. Approval param is boolean 'true' or 'false'
-router.post('/approve/final/salesman/:sid/:year/:approval', async (req, res) => {
+router.post('/approve/final/salesman/:sid/:year/:approval', verifyToken, requireRole(['SALESMAN']), async (req, res) => {
     const { sid, year, approval } = req.params;
 
     try {
@@ -308,8 +277,9 @@ router.post('/approve/final/salesman/:sid/:year/:approval', async (req, res) => 
     }
 });
 
+// N_FR3: Charts visualizing statistics
 // Dashboard statistics endpoint - returns aggregated real data
-router.get('/dashboard/stats', async (req, res) => {
+router.get('/dashboard/stats', verifyToken, async (req, res) => {
     try {
         const currentYear = new Date().getFullYear();
 

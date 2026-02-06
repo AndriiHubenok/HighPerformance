@@ -17,5 +17,9 @@
     "morgan": "~1.9.1",
     "pug": "2.0.0-beta11",
     "swagger-ui-express": "^5.0.1"
+  },
+  "devDependencies": {
+    "bcryptjs": "^3.0.3",
+    "jsonwebtoken": "^9.0.3"
   }
 }
