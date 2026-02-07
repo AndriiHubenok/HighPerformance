@@ -14,7 +14,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatTableModule } from '@angular/material/table';
-import { BonusService, SalesmanService, NotificationService } from '../../core/services';
+import { BonusService, SalesmanService, NotificationService, AuthService } from '../../core/services';
 import { Salesman, BonusCockpit, OrderPerformance } from '../../core/models';
 import { slideInAnimation, expandAnimation } from '../../shared/animations';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
@@ -54,10 +54,12 @@ import { NgxChartsModule } from '@swimlane/ngx-charts';
           <h2>Bonus Management</h2>
           <p class="subtitle">Review and approve bonus calculations</p>
         </div>
-        <button mat-flat-button color="accent" (click)="syncFromOrangeHRM()">
-          <mat-icon>sync</mat-icon>
-          Sync from OrangeHRM
-        </button>
+        @if (canManageBonus()) {
+          <button mat-flat-button color="accent" (click)="syncFromOrangeHRM()">
+            <mat-icon>sync</mat-icon>
+            Sync from OrangeHRM
+          </button>
+        }
       </div>
 
       <!-- Selection Panel -->
@@ -113,18 +115,24 @@ import { NgxChartsModule } from '@swimlane/ngx-charts';
               </div>
             </div>
             <div class="total-actions">
-              <button mat-stroked-button color="primary" (click)="fetchOrderData()">
-                <mat-icon>download</mat-icon>
-                Fetch Orders
-              </button>
-              <button mat-flat-button color="primary" (click)="approveBonus()">
-                <mat-icon>check_circle</mat-icon>
-                Approve All
-              </button>
-              <button mat-flat-button color="accent" (click)="finalApproval()">
-                <mat-icon>verified</mat-icon>
-                Final Approval
-              </button>
+              @if (canManageBonus()) {
+                <button mat-stroked-button color="primary" (click)="fetchOrderData()">
+                  <mat-icon>download</mat-icon>
+                  Fetch Orders
+                </button>
+              }
+              @if (canApproveBonus()) {
+                <button mat-flat-button color="primary" (click)="approveBonus()">
+                  <mat-icon>check_circle</mat-icon>
+                  Approve Bonus
+                </button>
+              }
+              @if (canManageBonus()) {
+                <button mat-flat-button color="accent" (click)="finalApproval()">
+                  <mat-icon>verified</mat-icon>
+                  Final Approval
+                </button>
+              }
             </div>
           </mat-card>
         </section>
@@ -140,7 +148,7 @@ import { NgxChartsModule } from '@swimlane/ngx-charts';
             </mat-card-header>
             <mat-card-content>
               <div class="breakdown-value">
-                €{{ cockpit()!.socialBonus?.total || 0 | number:'1.2-2' }}
+                €{{ cockpit()!.socialBonus.total || 0 | number:'1.2-2' }}
               </div>
               <div class="breakdown-chart">
                 <ngx-charts-pie-chart
@@ -165,7 +173,7 @@ import { NgxChartsModule } from '@swimlane/ngx-charts';
             </mat-card-header>
             <mat-card-content>
               <div class="breakdown-value">
-                €{{ cockpit()!.ordersBonus?.total || 0 | number:'1.2-2' }}
+                €{{ cockpit()!.ordersBonus.total || 0 | number:'1.2-2' }}
               </div>
               <div class="breakdown-chart">
                 <ngx-charts-pie-chart
@@ -183,7 +191,7 @@ import { NgxChartsModule } from '@swimlane/ngx-charts';
         </section>
 
         <!-- Qualifications -->
-        @if (cockpit()!.qualifications?.length) {
+        @if (cockpit()!.qualifications.length) {
           <mat-card class="qualifications-card">
             <mat-card-header>
               <mat-card-title>
@@ -609,12 +617,23 @@ export class BonusManagementComponent implements OnInit {
   private readonly bonusService = inject(BonusService);
   private readonly salesmanService = inject(SalesmanService);
   private readonly notificationService = inject(NotificationService);
+  private readonly authService = inject(AuthService);
   private readonly dialog = inject(MatDialog);
 
   readonly salesmen = signal<Salesman[]>([]);
   readonly cockpit = signal<BonusCockpit | null>(null);
   readonly cockpitLoading = signal(false);
   readonly orders = signal<OrderPerformance[]>([]);
+
+  // Перевірка прав доступу
+  canManageBonus(): boolean {
+    return this.authService.hasRole(['HR', 'CEO']);
+  }
+
+  // Salesman може підтвердити свій бонус
+  canApproveBonus(): boolean {
+    return this.authService.hasRole(['HR', 'CEO', 'SALESMAN']);
+  }
 
   selectedSalesmanId: number | null = null;
   selectedYear: number = new Date().getFullYear();

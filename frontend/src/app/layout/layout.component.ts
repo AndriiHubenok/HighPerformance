@@ -7,13 +7,17 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatDividerModule } from '@angular/material/divider';
 import { ThemeService } from '../core/services/theme.service';
+import { AuthService } from '../core/services/auth.service';
 import { fadeInAnimation } from '../shared/animations';
 
 interface NavItem {
   path: string;
   label: string;
   icon: string;
+  roles?: ('HR' | 'CEO' | 'SALESMAN')[];
 }
 
 @Component({
@@ -27,7 +31,9 @@ interface NavItem {
     MatIconModule,
     MatSidenavModule,
     MatListModule,
-    MatTooltipModule
+    MatTooltipModule,
+    MatMenuModule,
+    MatDividerModule
   ],
   animations: [fadeInAnimation],
   template: `
@@ -47,7 +53,7 @@ interface NavItem {
         </div>
 
         <nav class="sidebar-nav">
-          @for (item of navItems; track item.path) {
+          @for (item of filteredNavItems; track item.path) {
             <a
               [routerLink]="item.path"
               routerLinkActive="active"
@@ -83,10 +89,42 @@ interface NavItem {
             <h1 class="page-title">{{ currentPageTitle() }}</h1>
           </div>
           <div class="header-right">
-            <button mat-stroked-button class="sync-btn" (click)="onSync()">
-              <mat-icon>sync</mat-icon>
-              Sync Data
+            @if (canSync()) {
+              <button mat-stroked-button class="sync-btn" (click)="onSync()">
+                <mat-icon>sync</mat-icon>
+                Sync Data
+              </button>
+            }
+
+            <!-- User Menu -->
+            <button mat-button [matMenuTriggerFor]="userMenu" class="user-menu-btn">
+              <div class="user-avatar">
+                {{ getUserInitials() }}
+              </div>
+              <div class="user-info">
+                <span class="user-name">{{ authService.currentUser()?.username }}</span>
+                <span class="user-role-badge">{{ authService.currentUser()?.role }}</span>
+              </div>
+              <mat-icon>arrow_drop_down</mat-icon>
             </button>
+            <mat-menu #userMenu="matMenu" class="user-dropdown">
+              <div class="user-info-header">
+                <div class="user-avatar-large">{{ getUserInitials() }}</div>
+                <div class="user-details">
+                  <span class="user-fullname">{{ authService.currentUser()?.username }}</span>
+                  <span class="user-role">{{ getRoleDisplayName() }}</span>
+                </div>
+              </div>
+              <mat-divider></mat-divider>
+              <button mat-menu-item (click)="themeService.toggleTheme()">
+                <mat-icon>{{ themeService.currentTheme() === 'dark' ? 'light_mode' : 'dark_mode' }}</mat-icon>
+                <span>{{ themeService.currentTheme() === 'dark' ? 'Light Mode' : 'Dark Mode' }}</span>
+              </button>
+              <button mat-menu-item (click)="onLogout()">
+                <mat-icon>logout</mat-icon>
+                <span>Logout</span>
+              </button>
+            </mat-menu>
           </div>
         </header>
 
@@ -242,6 +280,145 @@ interface NavItem {
       gap: 8px;
     }
 
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .user-menu-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 14px 6px 6px;
+      border-radius: 28px;
+      background: var(--user-menu-bg, rgba(0, 0, 0, 0.05));
+      transition: background 0.2s ease;
+      height: auto;
+      min-height: 44px;
+
+      &:hover {
+        background: var(--user-menu-hover, rgba(0, 0, 0, 0.1));
+      }
+
+      ::ng-deep .mdc-button__label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+    }
+
+    .user-info {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      line-height: 1.3;
+      text-align: left;
+    }
+
+    .user-name {
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--text-primary, #1a1a2e);
+      line-height: 1.2;
+    }
+
+    .user-role-badge {
+      font-size: 10px;
+      color: white;
+      font-weight: 500;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 2px 8px;
+      border-radius: 8px;
+      margin-top: 2px;
+    }
+
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    ::ng-deep .user-dropdown {
+      min-width: 280px !important;
+
+      .user-info-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px;
+        background: var(--user-header-bg, #f5f5f5);
+      }
+
+      .user-avatar-large {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        font-weight: 600;
+      }
+
+      .user-details {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .user-fullname {
+        font-weight: 600;
+        font-size: 14px;
+      }
+
+      .user-email {
+        font-size: 12px;
+        color: var(--text-secondary, #666);
+      }
+
+      .user-role {
+        font-size: 10px;
+        color: white;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 2px 8px;
+        border-radius: 10px;
+        margin-top: 4px;
+        width: fit-content;
+      }
+    }
+
+    :host-context(.dark-theme) {
+      .user-menu-btn {
+        background: rgba(255, 255, 255, 0.1);
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.15);
+        }
+      }
+
+      .user-name {
+        color: #fff;
+      }
+
+      .user-role-badge {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      }
+
+      ::ng-deep .user-dropdown .user-info-header {
+        background: #1a1a2e;
+      }
+    }
+
     .content-area {
       flex: 1;
       overflow-y: auto;
@@ -293,19 +470,62 @@ interface NavItem {
 })
 export class LayoutComponent {
   readonly themeService = inject(ThemeService);
+  readonly authService = inject(AuthService);
 
   readonly sidebarCollapsed = signal(false);
   readonly currentPageTitle = signal('Dashboard');
 
   readonly navItems: NavItem[] = [
-    { path: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
-    { path: '/salesmen', label: 'Salesmen', icon: 'people' },
-    { path: '/social-performance', label: 'Social Performance', icon: 'assessment' },
-    { path: '/bonus', label: 'Bonus Management', icon: 'paid' }
+    { path: '/dashboard', label: 'Dashboard', icon: 'dashboard' }, // доступно всім
+    { path: '/salesmen', label: 'Salesmen', icon: 'people', roles: ['HR', 'CEO', 'SALESMAN'] },
+    { path: '/social-performance', label: 'Social Performance', icon: 'assessment', roles: ['HR', 'CEO', 'SALESMAN'] },
+    { path: '/bonus', label: 'Bonus Management', icon: 'paid', roles: ['HR', 'CEO', 'SALESMAN'] }
   ];
+
+  get filteredNavItems(): NavItem[] {
+    const userRole = this.authService.currentUser()?.role;
+    return this.navItems.filter(item => {
+      if (!item.roles) return true; // доступно всім
+      return userRole && item.roles.includes(userRole);
+    });
+  }
 
   toggleSidebar(): void {
     this.sidebarCollapsed.update(v => !v);
+  }
+
+  getUserInitials(): string {
+    const user = this.authService.currentUser();
+    if (!user) return '?';
+
+    return user.username.substring(0, 2).toUpperCase();
+  }
+
+  getRoleDisplayName(): string {
+    const role = this.authService.currentUser()?.role;
+    const roleNames: Record<string, string> = {
+      'HR': 'HR Manager',
+      'CEO': 'Chief Executive Officer',
+      'SALESMAN': 'Salesman'
+    };
+    return role ? roleNames[role] || role : '';
+  }
+
+  // Перевірка прав доступу до кнопок
+  canSync(): boolean {
+    return this.authService.hasRole(['HR', 'CEO']);
+  }
+
+  canManageSalesmen(): boolean {
+    return this.authService.hasRole(['HR', 'CEO']);
+  }
+
+  canApproveBonus(): boolean {
+    return this.authService.hasRole(['HR', 'CEO']);
+  }
+
+  onLogout(): void {
+    this.authService.logout();
   }
 
   onSync(): void {
