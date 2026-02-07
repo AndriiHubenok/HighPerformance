@@ -18,6 +18,7 @@ export interface DashboardStats {
     socialBonus: number;
     orderBonus: number;
     totalBonus: number;
+    year?: number;
   }[];
   bonusDistribution: {
     name: string;
@@ -42,7 +43,7 @@ export class BonusService {
   }
 
   addSocialPerformanceWithBonus(performance: SocialPerformanceInput & { remarks?: string }): Observable<any> {
-    return this.http.post(`${this.baseUrl}/social-performance`, performance);
+    return this.http.post('/api/social-performance', performance);
   }
 
   approveSocialBonuses(sid: number, year: number): Observable<{ message: string }> {
