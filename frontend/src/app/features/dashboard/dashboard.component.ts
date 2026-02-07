@@ -253,6 +253,7 @@ interface StatCard {
       }
     }
 
+
     .recent-card {
       border-radius: 16px;
 
@@ -442,14 +443,15 @@ export class DashboardComponent implements OnInit {
     this.loadDashboardData();
   }
 
+
   private loadDashboardData(): void {
     this.loading.set(true);
 
     this.bonusService.getDashboardStats().subscribe({
       next: (data: DashboardStats) => {
-
         // Set recent salesmen
         this.recentSalesmen.set(data.recentSalesmen.slice(0, 5));
+
 
         // Generate stats from real data
         this.stats.set([
