@@ -15,7 +15,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSelectModule } from '@angular/material/select';
 import { MatChipsModule } from '@angular/material/chips';
 import { debounceTime, Subject } from 'rxjs';
-import { SalesmanService, NotificationService } from '../../core/services';
+import { SalesmanService, NotificationService, AuthService } from '../../core/services';
 import { Salesman, SalesmanInput } from '../../core/models';
 import { slideInAnimation, listAnimation } from '../../shared/animations';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
@@ -53,10 +53,12 @@ import { ConfirmDialogComponent, ConfirmDialogData } from '../../shared/componen
           <h2>Salesmen Management</h2>
           <p class="subtitle">Manage your sales team members</p>
         </div>
-        <button mat-flat-button color="primary" (click)="openCreateDialog()">
-          <mat-icon>add</mat-icon>
-          Add Salesman
-        </button>
+        @if (canManageSalesmen()) {
+          <button mat-flat-button color="primary" (click)="openCreateDialog()">
+            <mat-icon>add</mat-icon>
+            Add Salesman
+          </button>
+        }
       </div>
 
       <!-- Filters -->
@@ -159,16 +161,18 @@ import { ConfirmDialogComponent, ConfirmDialogData } from '../../shared/componen
                 <th mat-header-cell *matHeaderCellDef>Actions</th>
                 <td mat-cell *matCellDef="let salesman">
                   <div class="action-buttons">
-                    <button mat-icon-button color="primary"
-                      matTooltip="Edit"
-                      (click)="openEditDialog(salesman)">
-                      <mat-icon>edit</mat-icon>
-                    </button>
-                    <button mat-icon-button color="warn"
-                      matTooltip="Delete"
-                      (click)="confirmDelete(salesman)">
-                      <mat-icon>delete</mat-icon>
-                    </button>
+                    @if (canManageSalesmen()) {
+                      <button mat-icon-button color="primary"
+                        matTooltip="Edit"
+                        (click)="openEditDialog(salesman)">
+                        <mat-icon>edit</mat-icon>
+                      </button>
+                      <button mat-icon-button color="warn"
+                        matTooltip="Delete"
+                        (click)="confirmDelete(salesman)">
+                        <mat-icon>delete</mat-icon>
+                      </button>
+                    }
                     <button mat-icon-button
                       matTooltip="View Performance"
                       [routerLink]="['/social-performance', salesman.sid]">
@@ -425,6 +429,7 @@ import { ConfirmDialogComponent, ConfirmDialogData } from '../../shared/componen
 export class SalesmenListComponent implements OnInit {
   private readonly salesmanService = inject(SalesmanService);
   private readonly notificationService = inject(NotificationService);
+  private readonly authService = inject(AuthService);
   private readonly dialog = inject(MatDialog);
   private readonly fb = inject(FormBuilder);
 
@@ -450,6 +455,11 @@ export class SalesmenListComponent implements OnInit {
   salesmanForm!: FormGroup;
   private editingSalesman: Salesman | null = null;
   private searchSubject = new Subject<string>();
+
+  // Перевірка прав доступу
+  canManageSalesmen(): boolean {
+    return this.authService.hasRole(['HR', 'CEO']);
+  }
 
   ngOnInit(): void {
     this.initForm();

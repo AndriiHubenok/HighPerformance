@@ -16,7 +16,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatSliderModule } from '@angular/material/slider';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { SocialPerformanceService, SalesmanService, NotificationService, BonusService } from '../../core/services';
+import { SocialPerformanceService, SalesmanService, NotificationService, BonusService, AuthService } from '../../core/services';
 import { SocialPerformance, Salesman } from '../../core/models';
 import { slideInAnimation, listAnimation } from '../../shared/animations';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
@@ -66,12 +66,14 @@ import { ConfirmDialogComponent, ConfirmDialogData } from '../../shared/componen
               }
             </mat-select>
           </mat-form-field>
-          <button mat-flat-button color="primary"
-            [disabled]="!selectedSalesmanId"
-            (click)="openAddDialog()">
-            <mat-icon>add</mat-icon>
-            Add Record
-          </button>
+          @if (canManagePerformance()) {
+            <button mat-flat-button color="primary"
+              [disabled]="!selectedSalesmanId"
+              (click)="openAddDialog()">
+              <mat-icon>add</mat-icon>
+              Add Record
+            </button>
+          }
         </div>
       </div>
 
@@ -197,11 +199,13 @@ import { ConfirmDialogComponent, ConfirmDialogData } from '../../shared/componen
                         (click)="viewDetails(record)">
                         <mat-icon>visibility</mat-icon>
                       </button>
-                      <button mat-icon-button color="warn"
-                        matTooltip="Delete"
-                        (click)="confirmDelete(record)">
-                        <mat-icon>delete</mat-icon>
-                      </button>
+                      @if (canManagePerformance()) {
+                        <button mat-icon-button color="warn"
+                          matTooltip="Delete"
+                          (click)="confirmDelete(record)">
+                          <mat-icon>delete</mat-icon>
+                        </button>
+                      }
                     </div>
                   </td>
                 </ng-container>
@@ -549,6 +553,7 @@ export class SocialPerformanceComponent implements OnInit {
   private readonly salesmanService = inject(SalesmanService);
   private readonly bonusService = inject(BonusService);
   private readonly notificationService = inject(NotificationService);
+  private readonly authService = inject(AuthService);
   private readonly dialog = inject(MatDialog);
   private readonly fb = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
@@ -572,6 +577,11 @@ export class SocialPerformanceComponent implements OnInit {
   years = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i);
 
   recordForm!: FormGroup;
+
+  // Перевірка прав доступу
+  canManagePerformance(): boolean {
+    return this.authService.hasRole(['HR', 'CEO']);
+  }
 
   ngOnInit(): void {
     this.initForm();

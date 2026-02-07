@@ -1,10 +1,15 @@
 import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { catchError, throwError } from 'rxjs';
+import { Router } from '@angular/router';
 import { NotificationService } from '../services/notification.service';
 
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const notificationService = inject(NotificationService);
+  const router = inject(Router);
+
+  // Не показуємо помилки для auth endpoints - там є власна обробка
+  const isAuthRequest = req.url.includes('/api/auth/');
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
@@ -20,23 +25,33 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
             errorMessage = error.error?.message || 'Invalid request data';
             break;
           case 401:
-            errorMessage = 'Unauthorized access';
+            errorMessage = error.error?.message || 'Session expired. Please login again.';
+            // Автоматичний logout при невалідному токені (але не для auth запитів)
+            if (!isAuthRequest) {
+              localStorage.removeItem('auth_token');
+              localStorage.removeItem('auth_user');
+              router.navigate(['/login']);
+            }
             break;
           case 403:
-            errorMessage = 'Access forbidden';
+            errorMessage = error.error?.message || 'Access forbidden. Insufficient rights.';
             break;
           case 404:
-            errorMessage = 'Resource not found';
+            errorMessage = error.error?.message || 'Resource not found';
             break;
           case 500:
-            errorMessage = 'Internal server error';
+            errorMessage = error.error?.error || 'Internal server error';
             break;
           default:
             errorMessage = error.error?.message || `Error: ${error.status}`;
         }
       }
 
-      notificationService.error(errorMessage);
+      // Показуємо помилку тільки якщо це не auth запит
+      if (!isAuthRequest) {
+        notificationService.error(errorMessage);
+      }
+
       return throwError(() => error);
     })
   );

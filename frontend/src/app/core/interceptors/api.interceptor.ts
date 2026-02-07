@@ -1,7 +1,19 @@
 import { HttpInterceptorFn } from '@angular/common/http';
+import { inject } from '@angular/core';
+import { AuthService } from '../services/auth.service';
 
 export const apiInterceptor: HttpInterceptorFn = (req, next) => {
-  // With proxy configured, we don't need to prepend the API URL
-  // The proxy will forward /api requests to the backend
+  const authService = inject(AuthService);
+  const token = authService.getToken();
+
+  // Додаємо JWT токен до запитів, якщо він є
+  if (token) {
+    req = req.clone({
+      setHeaders: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+  }
+
   return next(req);
 };
