@@ -46,8 +46,22 @@ export class BonusService {
     return this.http.post('/api/social-performance', performance);
   }
 
-  approveSocialBonuses(sid: number, year: number): Observable<{ message: string }> {
-    return this.http.post<{ message: string }>(`${this.baseUrl}/approve/${sid}/${year}`, {});
+  approveSocialBonusesHR(sid: number, year: number): Observable<{ status: string; finalBonus: number; bonusStatus: any }> {
+    return this.http.post<{ status: string; finalBonus: number; bonusStatus: any }>(`${this.baseUrl}/approve/final/hr/${sid}/${year}`, {});
+  }
+
+  approveSocialBonusesCEO(sid: number, year: number, qualification?: string): Observable<{ status: string; finalBonus: number; bonusStatus: any }> {
+    return this.http.post<{ status: string; finalBonus: number; bonusStatus: any }>(
+      `${this.baseUrl}/approve/final/ceo/${sid}/${year}`,
+      { qualification }
+    );
+  }
+
+  approveSocialBonusesSalesman(sid: number, year: number, approval: boolean): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(
+      `${this.baseUrl}/approve/final/salesman/${sid}/${year}/${approval}`,
+      {}
+    );
   }
 
   fetchOrderPerformance(sid: number, year: number): Observable<{ message: string; data: OrderPerformance[] }> {
@@ -61,10 +75,24 @@ export class BonusService {
     return this.http.get<BonusCockpit>(`${this.baseUrl}/cockpit/${sid}/${year}`);
   }
 
-  finalApproval(sid: number, year: number, newQualification?: string): Observable<{ message: string }> {
+  finalApprovalHR(sid: number, year: number): Observable<{ status: string; finalBonus: number; bonusStatus: any }> {
+    return this.http.post<{ status: string; finalBonus: number; bonusStatus: any }>(
+      `${this.baseUrl}/approve/final/hr/${sid}/${year}`,
+      {}
+    );
+  }
+
+  finalApprovalCEO(sid: number, year: number, qualification?: string): Observable<{ status: string; finalBonus: number; bonusStatus: any }> {
+    return this.http.post<{ status: string; finalBonus: number; bonusStatus: any }>(
+      `${this.baseUrl}/approve/final/ceo/${sid}/${year}`,
+      { qualification }
+    );
+  }
+
+  finalApprovalSalesman(sid: number, year: number, approval: boolean): Observable<{ message: string }> {
     return this.http.post<{ message: string }>(
-      `${this.baseUrl}/approve/final/${sid}/${year}`,
-      { newQualification }
+      `${this.baseUrl}/approve/final/salesman/${sid}/${year}/${approval}`,
+      {}
     );
   }
 }
