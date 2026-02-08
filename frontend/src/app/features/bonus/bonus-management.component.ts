@@ -19,6 +19,7 @@ import { Salesman, BonusCockpit, OrderPerformance } from '../../core/models';
 import { slideInAnimation, expandAnimation } from '../../shared/animations';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../shared/components/confirm-dialog/confirm-dialog.component';
+import { QualificationDialogComponent, QualificationDialogData, QualificationDialogResult } from '../../shared/components/qualification-dialog/qualification-dialog.component';
 import { NgxChartsModule } from '@swimlane/ngx-charts';
 
 @Component({
@@ -201,10 +202,10 @@ import { NgxChartsModule } from '@swimlane/ngx-charts';
             </mat-card-header>
             <mat-card-content>
               <div class="qualifications-list">
-                @for (qual of cockpit()!.qualifications; track qual) {
+                @for (qual of cockpit()!.qualifications; track qual.year) {
                   <mat-chip class="qualification-chip">
                     <mat-icon>star</mat-icon>
-                    {{ qual }}
+                    {{ qual.title }}{{ qual.comment ? ': ' + qual.comment : '' }} ({{ qual.year }})
                   </mat-chip>
                 }
               </div>
@@ -755,6 +756,37 @@ export class BonusManagementComponent implements OnInit {
   finalApproval(): void {
     if (!this.selectedSalesmanId || !this.selectedYear) return;
 
+    const userRole = this.authService.currentUser()?.role;
+
+    // Для CEO відкриваємо діалог для введення qualification
+    if (userRole === 'CEO') {
+      const selectedSalesman = this.salesmen().find(s => s.sid === this.selectedSalesmanId);
+      const salesmanName = selectedSalesman ? `${selectedSalesman.firstname} ${selectedSalesman.lastname}` : '';
+
+      const dialogRef = this.dialog.open(QualificationDialogComponent, {
+        data: {
+          title: 'Final Approval with Qualification',
+          message: 'Enter a qualification for this salesman. This will be stored in OrangeHRM.',
+          salesmanName: salesmanName,
+          confirmText: 'Approve & Save',
+          cancelText: 'Cancel'
+        } as QualificationDialogData
+      });
+
+      dialogRef.afterClosed().subscribe((result: QualificationDialogResult) => {
+        if (result?.confirmed) {
+          this.bonusService.finalApprovalCEO(this.selectedSalesmanId!, this.selectedYear, result.qualification).subscribe({
+            next: () => {
+              this.notificationService.success('Final approval completed with qualification');
+              this.loadCockpit();
+            }
+          });
+        }
+      });
+      return;
+    }
+
+    // Для інших ролей використовуємо стандартний ConfirmDialog
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       data: {
         title: 'Final Approval',
@@ -766,17 +798,8 @@ export class BonusManagementComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe(confirmed => {
       if (confirmed) {
-        const userRole = this.authService.currentUser()?.role;
-
         if (userRole === 'HR') {
           this.bonusService.finalApprovalHR(this.selectedSalesmanId!, this.selectedYear).subscribe({
-            next: () => {
-              this.notificationService.success('Final approval completed');
-              this.loadCockpit();
-            }
-          });
-        } else if (userRole === 'CEO') {
-          this.bonusService.finalApprovalCEO(this.selectedSalesmanId!, this.selectedYear).subscribe({
             next: () => {
               this.notificationService.success('Final approval completed');
               this.loadCockpit();

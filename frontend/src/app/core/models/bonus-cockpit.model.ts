@@ -1,3 +1,11 @@
+export interface Qualification {
+  salesmanId: number;
+  company: string;
+  title: string;
+  year: number;
+  comment: string;
+}
+
 export interface BonusCockpit {
   salesmanId: number;
   year: number;
@@ -10,6 +18,6 @@ export interface BonusCockpit {
     total: number;
     records: any[];
   };
-  qualifications: string[];
+  qualifications: Qualification[];
 }
 
