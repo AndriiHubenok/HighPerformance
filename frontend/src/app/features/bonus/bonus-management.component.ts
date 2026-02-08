@@ -127,7 +127,7 @@ import { NgxChartsModule } from '@swimlane/ngx-charts';
                   Approve Bonus
                 </button>
               }
-              @if (canManageBonus()) {
+              @if (canApproveBonus()) {
                 <button mat-flat-button color="accent" (click)="finalApproval()">
                   <mat-icon>verified</mat-icon>
                   Final Approval
@@ -724,12 +724,30 @@ export class BonusManagementComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe(confirmed => {
       if (confirmed) {
-        this.bonusService.approveSocialBonuses(this.selectedSalesmanId!, this.selectedYear).subscribe({
-          next: () => {
-            this.notificationService.success('Bonuses approved successfully');
-            this.loadCockpit();
-          }
-        });
+        const userRole = this.authService.currentUser()?.role;
+
+        if (userRole === 'HR') {
+          this.bonusService.approveSocialBonusesHR(this.selectedSalesmanId!, this.selectedYear).subscribe({
+            next: () => {
+              this.notificationService.success('Bonuses approved successfully');
+              this.loadCockpit();
+            }
+          });
+        } else if (userRole === 'CEO') {
+          this.bonusService.approveSocialBonusesCEO(this.selectedSalesmanId!, this.selectedYear).subscribe({
+            next: () => {
+              this.notificationService.success('Bonuses approved successfully');
+              this.loadCockpit();
+            }
+          });
+        } else if (userRole === 'SALESMAN') {
+          this.bonusService.approveSocialBonusesSalesman(this.selectedSalesmanId!, this.selectedYear, true).subscribe({
+            next: () => {
+              this.notificationService.success('Bonuses approved successfully');
+              this.loadCockpit();
+            }
+          });
+        }
       }
     });
   }
@@ -748,12 +766,30 @@ export class BonusManagementComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe(confirmed => {
       if (confirmed) {
-        this.bonusService.finalApproval(this.selectedSalesmanId!, this.selectedYear).subscribe({
-          next: () => {
-            this.notificationService.success('Final approval completed');
-            this.loadCockpit();
-          }
-        });
+        const userRole = this.authService.currentUser()?.role;
+
+        if (userRole === 'HR') {
+          this.bonusService.finalApprovalHR(this.selectedSalesmanId!, this.selectedYear).subscribe({
+            next: () => {
+              this.notificationService.success('Final approval completed');
+              this.loadCockpit();
+            }
+          });
+        } else if (userRole === 'CEO') {
+          this.bonusService.finalApprovalCEO(this.selectedSalesmanId!, this.selectedYear).subscribe({
+            next: () => {
+              this.notificationService.success('Final approval completed');
+              this.loadCockpit();
+            }
+          });
+        } else if (userRole === 'SALESMAN') {
+          this.bonusService.finalApprovalSalesman(this.selectedSalesmanId!, this.selectedYear, true).subscribe({
+            next: () => {
+              this.notificationService.success('Final approval completed');
+              this.loadCockpit();
+            }
+          });
+        }
       }
     });
   }
