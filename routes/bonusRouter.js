@@ -218,11 +218,28 @@ router.post('/approve/final/ceo/:sid/:year', verifyToken, requireRole(['CEO']), 
 // Final approval endpoint for salesman to confirm or reject the computed bonus. Approval param is boolean 'true' or 'false'
 router.post('/approve/final/salesman/:sid/:year/:approval', verifyToken, requireRole(['SALESMAN']), async (req, res) => {
     const { sid, year, approval } = req.params;
+    const requesterId = req.user.linkedSalesmanId;
+
+    if (String(requesterId) !== String(sid)) {
+        return res.status(403).json({
+            success: "You can only confirm Your own bonus."
+        });
+    }
 
     try {
         const socialRecords = await SocialPerformance.find({ salesmanId: sid, year });
         const orderRecords = await OrderPerformance.find({ salesmanId: sid, year });
         let bonusResult
+
+        if(orderRecords.filter(o => !o.ceoReviewStatus).length !== 0 || orderRecords.filter(o => !o.hrReviewStatus).length !== 0){
+            bonusResult = {success: "Bonus not approved by CEO or HR, bonus not sent to HRM"};
+            res.json({
+                status: "Rejected",
+                finalBonus: 0,
+                hrmBonusStatus: bonusResult,
+            }).status(400);
+            return
+        }
 
         // Disapproval case
         if(approval === 'false'){
@@ -238,16 +255,6 @@ router.post('/approve/final/salesman/:sid/:year/:approval', verifyToken, require
                 finalBonus: 0,
                 hrmBonusStatus: bonusResult
             });
-            return
-        }
-
-        if(orderRecords.filter(o => !o.ceoReviewStatus).length !== 0 || orderRecords.filter(o => !o.hrReviewStatus).length !== 0){
-            bonusResult = {success: "Bonus not approved by CEO or HR, bonus not sent to HRM"};
-            res.json({
-                status: "Rejected",
-                finalBonus: 0,
-                hrmBonusStatus: bonusResult,
-            }).status(400);
             return
         }
 
