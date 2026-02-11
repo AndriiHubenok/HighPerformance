@@ -20,6 +20,9 @@
   },
   "devDependencies": {
     "bcryptjs": "^3.0.3",
-    "jsonwebtoken": "^9.0.3"
+    "chai": "^6.2.2",
+    "jsonwebtoken": "^9.0.3",
+    "mocha": "^11.7.5",
+    "sinon": "^21.0.1"
   }
 }
