@@ -6,6 +6,8 @@ const Salesman = require('../models/Salesman');
 const OrderPerformance = require('../models/OrderPerformance');
 const SocialPerformance = require('../models/SocialPerformance');
 const Qualification = require('../models/Qualification');
+const Notification = require('../models/Notification');
+const User = require('../models/User');
 const orangeHrmService = require('../services/orangeHrmService');
 const openCrxService = require('../services/openCrxService');
 
@@ -249,11 +251,38 @@ router.post('/approve/final/salesman/:sid/:year/:approval', verifyToken, require
 
             await Qualification.deleteMany({ salesmanId: sid, year })
 
+            // Get salesman info for notification
+            const salesman = await Salesman.findOne({ sid: Number(sid) });
+            const salesmanName = salesman ? `${salesman.firstname} ${salesman.lastname}` : `ID: ${sid}`;
+
+            // Create notification for CEO
+            const notification = new Notification({
+                recipientRole: 'CEO',
+                type: 'BONUS_REJECTED',
+                title: 'Bonus Rejected by Salesman',
+                message: `Salesman ${salesmanName} has rejected the bonus computation for year ${year}. Please review and update the bonus calculation.`,
+                relatedSalesmanId: Number(sid),
+                relatedYear: Number(year)
+            });
+            await notification.save();
+
+            // Also create notification for HR
+            const notificationHR = new Notification({
+                recipientRole: 'HR',
+                type: 'BONUS_REJECTED',
+                title: 'Bonus Rejected by Salesman',
+                message: `Salesman ${salesmanName} has rejected the bonus computation for year ${year}. Please review and update the bonus calculation.`,
+                relatedSalesmanId: Number(sid),
+                relatedYear: Number(year)
+            });
+            await notificationHR.save();
+
             bonusResult = {success: "Bonus disapproved by salesman, bonus sent back to HR and CEO"};
             res.json({
                 status: "Disapproved",
                 finalBonus: 0,
-                hrmBonusStatus: bonusResult
+                hrmBonusStatus: bonusResult,
+                notificationSent: true
             });
             return
         }
@@ -357,6 +386,80 @@ router.get('/dashboard/stats', verifyToken, async (req, res) => {
             recentSalesmen: salesmen.slice(0, 5)
         });
 
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get notifications for current user based on their role
+router.get('/notifications', verifyToken, async (req, res) => {
+    try {
+        const userRole = req.user.role;
+        const notifications = await Notification.find({ recipientRole: userRole })
+            .sort({ createdAt: -1 })
+            .limit(50);
+
+        res.json(notifications);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get unread notifications count
+router.get('/notifications/unread-count', verifyToken, async (req, res) => {
+    try {
+        const userRole = req.user.role;
+        const count = await Notification.countDocuments({ recipientRole: userRole, isRead: false });
+
+        res.json({ count });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Mark notification as read
+router.put('/notifications/:id/read', verifyToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        await Notification.findByIdAndUpdate(id, { isRead: true });
+
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Mark all notifications as read for current user role
+router.put('/notifications/mark-all-read', verifyToken, async (req, res) => {
+    try {
+        const userRole = req.user.role;
+        await Notification.updateMany({ recipientRole: userRole, isRead: false }, { isRead: true });
+
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Delete a single notification
+router.delete('/notifications/:id', verifyToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        await Notification.findByIdAndDelete(id);
+
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Delete all notifications for current user role
+router.delete('/notifications', verifyToken, async (req, res) => {
+    try {
+        const userRole = req.user.role;
+        await Notification.deleteMany({ recipientRole: userRole });
+
+        res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
