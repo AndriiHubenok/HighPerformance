@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -9,8 +9,10 @@ import { MatListModule } from '@angular/material/list';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatBadgeModule } from '@angular/material/badge';
 import { ThemeService } from '../core/services/theme.service';
 import { AuthService } from '../core/services/auth.service';
+import { SystemNotificationService, SystemNotification } from '../core/services/system-notification.service';
 import { fadeInAnimation } from '../shared/animations';
 
 interface NavItem {
@@ -33,7 +35,8 @@ interface NavItem {
     MatListModule,
     MatTooltipModule,
     MatMenuModule,
-    MatDividerModule
+    MatDividerModule,
+    MatBadgeModule
   ],
   animations: [fadeInAnimation],
   template: `
@@ -94,6 +97,57 @@ interface NavItem {
                 <mat-icon>sync</mat-icon>
                 Sync Data
               </button>
+            }
+
+            <!-- Notifications -->
+            @if (canViewNotifications()) {
+              <button mat-icon-button [matMenuTriggerFor]="notificationMenu" class="notification-btn"
+                [matBadge]="systemNotificationService.unreadCount()"
+                [matBadgeHidden]="systemNotificationService.unreadCount() === 0"
+                matBadgeColor="warn"
+                matBadgeSize="small">
+                <mat-icon>notifications</mat-icon>
+              </button>
+              <mat-menu #notificationMenu="matMenu" class="notification-dropdown">
+                <div class="notification-header">
+                  <span>Notifications</span>
+                  <div class="notification-actions">
+                    @if (systemNotificationService.unreadCount() > 0) {
+                      <button mat-button color="primary" (click)="markAllNotificationsAsRead($event)">
+                        Mark all read
+                      </button>
+                    }
+                    @if (systemNotificationService.notifications().length > 0) {
+                      <button mat-icon-button color="warn" (click)="clearAllNotifications($event)" matTooltip="Clear all">
+                        <mat-icon>delete_sweep</mat-icon>
+                      </button>
+                    }
+                  </div>
+                </div>
+                <mat-divider></mat-divider>
+                @if (systemNotificationService.notifications().length === 0) {
+                  <div class="no-notifications">
+                    <mat-icon>notifications_none</mat-icon>
+                    <span>No notifications</span>
+                  </div>
+                } @else {
+                  @for (notification of systemNotificationService.notifications().slice(0, 10); track notification._id) {
+                    <div class="notification-item" [class.unread]="!notification.isRead">
+                      <mat-icon [class]="getNotificationIconClass(notification.type)">
+                        {{ getNotificationIcon(notification.type) }}
+                      </mat-icon>
+                      <div class="notification-content" (click)="onNotificationClick(notification)">
+                        <span class="notification-title">{{ notification.title }}</span>
+                        <span class="notification-message">{{ notification.message }}</span>
+                        <span class="notification-time">{{ getTimeAgo(notification.createdAt) }}</span>
+                      </div>
+                      <button mat-icon-button class="delete-notification-btn" (click)="deleteNotification($event, notification._id)" matTooltip="Delete">
+                        <mat-icon>close</mat-icon>
+                      </button>
+                    </div>
+                  }
+                }
+              </mat-menu>
             }
 
             <!-- User Menu -->
@@ -419,6 +473,177 @@ interface NavItem {
       }
     }
 
+    .notification-btn {
+      color: var(--text-primary, #1a1a2e);
+    }
+
+    ::ng-deep .notification-dropdown {
+      min-width: 360px !important;
+      max-width: 400px !important;
+
+      .notification-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 16px;
+        font-weight: 600;
+        font-size: 14px;
+
+        .notification-actions {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+      }
+
+      .no-notifications {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        padding: 32px 16px;
+        color: var(--text-secondary, #666);
+
+        mat-icon {
+          font-size: 48px;
+          width: 48px;
+          height: 48px;
+          opacity: 0.5;
+        }
+      }
+
+      .notification-item {
+        display: flex;
+        gap: 12px;
+        padding: 12px 16px;
+        cursor: pointer;
+        transition: background 0.2s ease;
+        align-items: flex-start;
+
+        &:hover {
+          background: rgba(0, 0, 0, 0.05);
+
+          .delete-notification-btn {
+            opacity: 1;
+          }
+        }
+
+        &.unread {
+          background: rgba(102, 126, 234, 0.1);
+        }
+
+        .notification-content {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          flex: 1;
+        }
+
+        .notification-title {
+          font-weight: 600;
+          font-size: 13px;
+        }
+
+        .notification-message {
+          font-size: 12px;
+          color: var(--text-secondary, #666);
+          line-height: 1.4;
+        }
+
+        .notification-time {
+          font-size: 11px;
+          color: var(--text-secondary, #999);
+        }
+
+        .delete-notification-btn {
+          opacity: 0;
+          transition: opacity 0.2s ease;
+          width: 24px;
+          height: 24px;
+          line-height: 24px;
+
+          mat-icon {
+            font-size: 16px;
+            width: 16px;
+            height: 16px;
+          }
+        }
+      }
+
+      .notification-icon-error {
+        color: #ef4444;
+      }
+
+      .notification-icon-success {
+        color: #22c55e;
+      }
+
+      .notification-icon-warning {
+        color: #f59e0b;
+      }
+
+      .notification-icon-info {
+        color: #3b82f6;
+      }
+    }
+
+    :host-context(.dark-theme) {
+      .notification-btn {
+        color: white;
+      }
+
+      ::ng-deep .notification-dropdown {
+        background: #1e1e2d !important;
+
+        .notification-header {
+          color: #e2e8f0;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .no-notifications {
+          color: #94a3b8;
+
+          mat-icon {
+            color: #94a3b8;
+          }
+        }
+
+        .notification-item {
+          &:hover {
+            background: rgba(255, 255, 255, 0.1);
+          }
+
+          &.unread {
+            background: rgba(102, 126, 234, 0.2);
+          }
+
+          .notification-title {
+            color: #e2e8f0;
+          }
+
+          .notification-message {
+            color: #94a3b8;
+          }
+
+          .notification-time {
+            color: #64748b;
+          }
+
+          .delete-notification-btn {
+            color: #94a3b8;
+
+            &:hover {
+              color: #ef4444;
+            }
+          }
+        }
+
+        mat-divider {
+          border-color: rgba(255, 255, 255, 0.1) !important;
+        }
+      }
+    }
+
     .content-area {
       flex: 1;
       overflow-y: auto;
@@ -468,9 +693,10 @@ interface NavItem {
     }
   `]
 })
-export class LayoutComponent {
+export class LayoutComponent implements OnInit {
   readonly themeService = inject(ThemeService);
   readonly authService = inject(AuthService);
+  readonly systemNotificationService = inject(SystemNotificationService);
 
   readonly sidebarCollapsed = signal(false);
   readonly currentPageTitle = signal('Dashboard');
@@ -481,6 +707,15 @@ export class LayoutComponent {
     { path: '/social-performance', label: 'Social Performance', icon: 'assessment', roles: ['HR', 'CEO', 'SALESMAN'] },
     { path: '/bonus', label: 'Bonus Management', icon: 'paid', roles: ['HR', 'CEO', 'SALESMAN'] }
   ];
+
+  ngOnInit(): void {
+    // Load notifications for CEO and HR
+    if (this.canViewNotifications()) {
+      this.systemNotificationService.loadNotifications();
+      this.systemNotificationService.loadUnreadCount();
+      this.systemNotificationService.startPolling();
+    }
+  }
 
   get filteredNavItems(): NavItem[] {
     const userRole = this.authService.currentUser()?.role;
@@ -524,12 +759,73 @@ export class LayoutComponent {
     return this.authService.hasRole(['HR', 'CEO']);
   }
 
+  canViewNotifications(): boolean {
+    return this.authService.hasRole(['HR', 'CEO']);
+  }
+
   onLogout(): void {
     this.authService.logout();
   }
 
   onSync(): void {
     // Will be implemented with bonus service
+  }
+
+  // Notification methods
+  getNotificationIcon(type: string): string {
+    const icons: Record<string, string> = {
+      'BONUS_REJECTED': 'cancel',
+      'BONUS_APPROVED': 'check_circle',
+      'BONUS_PENDING': 'hourglass_empty',
+      'INFO': 'info'
+    };
+    return icons[type] || 'notifications';
+  }
+
+  getNotificationIconClass(type: string): string {
+    const classes: Record<string, string> = {
+      'BONUS_REJECTED': 'notification-icon-error',
+      'BONUS_APPROVED': 'notification-icon-success',
+      'BONUS_PENDING': 'notification-icon-warning',
+      'INFO': 'notification-icon-info'
+    };
+    return classes[type] || '';
+  }
+
+  getTimeAgo(dateString: string): string {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
+  }
+
+  onNotificationClick(notification: SystemNotification): void {
+    if (!notification.isRead) {
+      this.systemNotificationService.markNotificationAsRead(notification._id);
+    }
+  }
+
+  markAllNotificationsAsRead(event: Event): void {
+    event.stopPropagation();
+    this.systemNotificationService.markAllNotificationsAsRead();
+  }
+
+  deleteNotification(event: Event, id: string): void {
+    event.stopPropagation();
+    this.systemNotificationService.removeNotification(id);
+  }
+
+  clearAllNotifications(event: Event): void {
+    event.stopPropagation();
+    this.systemNotificationService.clearAllNotifications();
   }
 }
 

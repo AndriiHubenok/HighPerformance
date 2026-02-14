@@ -128,10 +128,14 @@ import { NgxChartsModule } from '@swimlane/ngx-charts';
                   Approve Bonus
                 </button>
               }
-              @if (canApproveBonus()) {
+              @if (canFinalApprove()) {
                 <button mat-flat-button color="accent" (click)="finalApproval()">
                   <mat-icon>verified</mat-icon>
                   Final Approval
+                </button>
+                <button mat-stroked-button color="warn" (click)="rejectBonus()">
+                  <mat-icon>cancel</mat-icon>
+                  Reject Bonus
                 </button>
               }
             </div>
@@ -633,7 +637,12 @@ export class BonusManagementComponent implements OnInit {
 
   // Salesman може підтвердити свій бонус
   canApproveBonus(): boolean {
-    return this.authService.hasRole(['HR', 'CEO', 'SALESMAN']);
+    return this.authService.hasRole(['HR', 'CEO']);
+  }
+
+  // Тільки SALESMAN може використовувати Final Approval
+  canFinalApprove(): boolean {
+    return this.authService.hasRole(['SALESMAN']);
   }
 
   selectedSalesmanId: number | null = null;
@@ -714,6 +723,36 @@ export class BonusManagementComponent implements OnInit {
   approveBonus(): void {
     if (!this.selectedSalesmanId || !this.selectedYear) return;
 
+    const userRole = this.authService.currentUser()?.role;
+
+    // Для CEO відкриваємо діалог для введення qualification
+    if (userRole === 'CEO') {
+      const selectedSalesman = this.salesmen().find(s => s.sid === this.selectedSalesmanId);
+      const salesmanName = selectedSalesman ? `${selectedSalesman.firstname} ${selectedSalesman.lastname}` : '';
+
+      const dialogRef = this.dialog.open(QualificationDialogComponent, {
+        data: {
+          title: 'Approve Bonus with Qualification',
+          message: 'Enter a qualification for this salesman. This will be stored in OrangeHRM.',
+          salesmanName: salesmanName,
+          confirmText: 'Approve & Save',
+          cancelText: 'Cancel'
+        } as QualificationDialogData
+      });
+
+      dialogRef.afterClosed().subscribe((result: QualificationDialogResult) => {
+        if (result?.confirmed) {
+          this.bonusService.finalApprovalCEO(this.selectedSalesmanId!, this.selectedYear, result.qualification).subscribe({
+            next: () => {
+              this.notificationService.success('Bonus approved with qualification');
+              this.loadCockpit();
+            }
+          });
+        }
+      });
+      return;
+    }
+
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       data: {
         title: 'Approve Bonuses',
@@ -725,24 +764,8 @@ export class BonusManagementComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe(confirmed => {
       if (confirmed) {
-        const userRole = this.authService.currentUser()?.role;
-
         if (userRole === 'HR') {
           this.bonusService.approveSocialBonusesHR(this.selectedSalesmanId!, this.selectedYear).subscribe({
-            next: () => {
-              this.notificationService.success('Bonuses approved successfully');
-              this.loadCockpit();
-            }
-          });
-        } else if (userRole === 'CEO') {
-          this.bonusService.approveSocialBonusesCEO(this.selectedSalesmanId!, this.selectedYear).subscribe({
-            next: () => {
-              this.notificationService.success('Bonuses approved successfully');
-              this.loadCockpit();
-            }
-          });
-        } else if (userRole === 'SALESMAN') {
-          this.bonusService.approveSocialBonusesSalesman(this.selectedSalesmanId!, this.selectedYear, true).subscribe({
             next: () => {
               this.notificationService.success('Bonuses approved successfully');
               this.loadCockpit();
@@ -756,37 +779,7 @@ export class BonusManagementComponent implements OnInit {
   finalApproval(): void {
     if (!this.selectedSalesmanId || !this.selectedYear) return;
 
-    const userRole = this.authService.currentUser()?.role;
-
-    // Для CEO відкриваємо діалог для введення qualification
-    if (userRole === 'CEO') {
-      const selectedSalesman = this.salesmen().find(s => s.sid === this.selectedSalesmanId);
-      const salesmanName = selectedSalesman ? `${selectedSalesman.firstname} ${selectedSalesman.lastname}` : '';
-
-      const dialogRef = this.dialog.open(QualificationDialogComponent, {
-        data: {
-          title: 'Final Approval with Qualification',
-          message: 'Enter a qualification for this salesman. This will be stored in OrangeHRM.',
-          salesmanName: salesmanName,
-          confirmText: 'Approve & Save',
-          cancelText: 'Cancel'
-        } as QualificationDialogData
-      });
-
-      dialogRef.afterClosed().subscribe((result: QualificationDialogResult) => {
-        if (result?.confirmed) {
-          this.bonusService.finalApprovalCEO(this.selectedSalesmanId!, this.selectedYear, result.qualification).subscribe({
-            next: () => {
-              this.notificationService.success('Final approval completed with qualification');
-              this.loadCockpit();
-            }
-          });
-        }
-      });
-      return;
-    }
-
-    // Для інших ролей використовуємо стандартний ConfirmDialog
+    // Final Approval доступний тільки для SALESMAN
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       data: {
         title: 'Final Approval',
@@ -798,21 +791,36 @@ export class BonusManagementComponent implements OnInit {
 
     dialogRef.afterClosed().subscribe(confirmed => {
       if (confirmed) {
-        if (userRole === 'HR') {
-          this.bonusService.finalApprovalHR(this.selectedSalesmanId!, this.selectedYear).subscribe({
-            next: () => {
-              this.notificationService.success('Final approval completed');
-              this.loadCockpit();
-            }
-          });
-        } else if (userRole === 'SALESMAN') {
-          this.bonusService.finalApprovalSalesman(this.selectedSalesmanId!, this.selectedYear, true).subscribe({
-            next: () => {
-              this.notificationService.success('Final approval completed');
-              this.loadCockpit();
-            }
-          });
-        }
+        this.bonusService.finalApprovalSalesman(this.selectedSalesmanId!, this.selectedYear, true).subscribe({
+          next: () => {
+            this.notificationService.success('Final approval completed');
+            this.loadCockpit();
+          }
+        });
+      }
+    });
+  }
+
+  rejectBonus(): void {
+    if (!this.selectedSalesmanId || !this.selectedYear) return;
+
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        title: 'Reject Bonus',
+        message: 'Are you sure you want to reject this bonus calculation? This action cannot be undone.',
+        confirmText: 'Reject',
+        type: 'danger'
+      } as ConfirmDialogData
+    });
+
+    dialogRef.afterClosed().subscribe(confirmed => {
+      if (confirmed) {
+        this.bonusService.finalApprovalSalesman(this.selectedSalesmanId!, this.selectedYear, false).subscribe({
+          next: () => {
+            this.notificationService.success('Bonus rejected successfully');
+            this.loadCockpit();
+          }
+        });
       }
     });
   }
