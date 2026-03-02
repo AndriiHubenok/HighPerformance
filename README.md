@@ -19,14 +19,43 @@ A full-stack application for managing salesmen, tracking social performance, and
 ### Backend
 - **Node.js** with **Express**
 - **MongoDB** with **Mongoose**
-- **JWT** (`jsonwebtoken`) for authentication
-- **bcryptjs** for password hashing
 - **Swagger UI Express** for API documentation
 - **Axios** for external HTTP calls (OrangeHRM, OpenCRX)
-- **Mocha** + **Chai** + **Sinon** for testing
+- **JWT** (`jsonwebtoken`) + **bcryptjs** for authentication & password hashing *(dev dependency)*
+- **Mocha** + **Chai** + **Sinon** for testing *(dev dependencies)*
 
 ### Frontend
 See [`frontend/README.md`](frontend/README.md) for the Angular application details.
+
+## Docker Setup (OrangeHRM & OpenCRX)
+
+The application integrates with **OrangeHRM** and **OpenCRX**, which can be run locally via Docker. Setup scripts are provided in the `docker/` directory.
+
+### First-time setup
+
+```bash
+cd docker
+./firstStart.sh        # Linux/macOS
+# or
+firstStart.bat         # Windows
+```
+
+This will pull and start all required containers. After setup:
+
+| Service | URL | Credentials |
+|---------|-----|-------------|
+| OrangeHRM | http://localhost:8888 | `demouser` / `*Safb02da42Demo$` |
+| OpenCRX | http://localhost:8887/opencrx-core-CRX/ | `guest` / `guest` |
+
+### Subsequent starts / stops
+
+```bash
+cd docker
+./start.sh   # start containers
+./stop.sh    # stop containers
+```
+
+See [`docker/README.md`](docker/README.md) for more details.
 
 ## Prerequisites
 
@@ -80,12 +109,21 @@ http://localhost:3001/api-docs
 | `POST` | `/api/salesmen` | Create a new salesman |
 | `POST` | `/api/social-performance` | Add a social performance record |
 | `GET` | `/api/social-performance/:sid` | Get performance records for a salesman |
+| `PUT` | `/api/social-performance/:recordId` | Update a social performance record (HR) |
+| `DELETE` | `/api/social-performance/:recordId` | Delete a social performance record (CEO) |
 | `POST` | `/api/bonus/integration/orangehrm/sync-employees` | Sync employees from OrangeHRM |
 | `POST` | `/api/bonus/orders/fetch/:sid/:year` | Fetch order performance from OpenCRX |
 | `GET` | `/api/bonus/cockpit/:sid/:year` | View consolidated bonus summary |
+| `GET` | `/api/bonus/dashboard/stats` | Dashboard statistics |
 | `POST` | `/api/bonus/approve/final/hr/:sid/:year` | HR approves bonus |
 | `POST` | `/api/bonus/approve/final/ceo/:sid/:year` | CEO approves bonus |
 | `POST` | `/api/bonus/approve/final/salesman/:sid/:year/:approval` | Salesman accepts/rejects bonus |
+| `GET` | `/api/bonus/notifications` | Get notifications for current user |
+| `GET` | `/api/bonus/notifications/unread-count` | Get unread notification count |
+| `PUT` | `/api/bonus/notifications/:id/read` | Mark a notification as read |
+| `PUT` | `/api/bonus/notifications/mark-all-read` | Mark all notifications as read |
+| `DELETE` | `/api/bonus/notifications/:id` | Delete a notification |
+| `DELETE` | `/api/bonus/notifications` | Delete all notifications |
 
 ## Project Structure
 
@@ -122,6 +160,10 @@ npm test
 ```
 
 Tests use **Mocha**, **Chai**, and **Sinon** for unit testing service and route logic.
+
+## Postman Collection
+
+A ready-to-use Postman collection is available at [`HighPerformance.postman_collection.json`](HighPerformance.postman_collection.json). Import it into Postman to quickly test all API endpoints.
 
 ## Environment
 
