@@ -1,0 +1,165 @@
+openapi: 3.0.0
+info:
+  description: "Documentation of supported APIs for the customized HR Software OrangeHRM."
+  version: "1.0"
+  title: "OrangeHRM for Smarthoover Ltd."
+servers: 
+- url : "/symfony/web/index.php"
+  description: "local container"
+
+paths:
+  /oauth/issueToken:
+    post:
+      tags:
+      - "Authentication"
+      summary: "Authenticates and provides a Bearer Token"
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                client_id:
+                  type: string
+                client_secret:
+                  type: string
+                grant_type:
+                  type: string
+                  enum:
+                    - password
+                    - client_credentials
+                username:
+                  type: string
+                password:
+                  type: string
+                scope:
+                  type: string
+                  enum:
+                    - admin
+      responses:
+        "200":
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  expires_in:
+                    type: integer
+                  token_type:
+                    type: string
+                  scope:
+                    type: string
+                  refresh_token:
+                    type: string
+        "400":
+          description: "Bad Request"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  error_description:
+                    type: string
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  error_description:
+                    type: string
+  /api/v1/employee/{id}/bonussalary:
+    get:
+      tags:
+      - "Bonussalary"
+      summary: "Finds Bonussalary for an Employee"
+      parameters:
+      - in: "path"
+        name: "id"
+        description: "ID of the Employee"
+        required: true
+        schema:
+         type : integer
+      responses:
+        "200":
+          description: "Success"
+        "202":
+          description: "No Matching Employee For Given ID Found"
+        "400":
+          description: "Wrong Grant Type For This Action"
+      security:
+        - bearerAuth: []
+    post:
+      tags:
+      - "Bonussalary"
+      summary: "Update or Add Bonussalary for an Employee"
+      parameters:
+      - name: "id"
+        in : path
+        description: "ID of the Employee"
+        required: true
+        schema:
+         type : integer
+      - in: "query"
+        name: "year"
+        description: "Year of the Bonussalary"
+        required: true
+        schema:
+         type : integer
+      - in: "query"
+        name: "value"
+        description: "Value of the Bonussalary"
+        required: true
+        schema:
+         type : integer
+      responses:
+        "200":
+          description: "Successfully Saved"
+        "202":
+          description: "No Matching Employee For Given ID Found"
+        "400":
+          description: "Wrong Grant Type For This Action"
+      security:
+        - bearerAuth: []
+    delete:
+      tags:
+      - "Bonussalary"
+      summary: "Delete Bonussalary for an Employee"
+      parameters:
+      - in: "path"
+        name: "id"
+        description: "ID of the Employee"
+        required: true
+        schema:
+         type : integer
+      - in: "query"
+        name: "year"
+        description: "Year of the Bonussalary"
+        required: true
+        schema:
+         type : integer
+      responses:
+        "200":
+          description: "Successfully Deleted"
+        "202":
+          description: "No Matching Employee For Given ID Found"
+        "400":
+          description: "Wrong Grant Type For This Action"
+      security:
+        - bearerAuth: []
+        
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

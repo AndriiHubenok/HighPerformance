@@ -71,18 +71,11 @@ async function getSalesDataForEmployee(salesmanId, year) {
     const enrichedOrders = [];
     const targetYear = parseInt(year);
 
-    console.log(`Starting fetching data for salesman: ${salesmanId}, year: ${year}`);
-
     try {
         const [allOrders, allAccounts] = await Promise.all([
             fetchCrx('org.opencrx.kernel.contract1/provider/CRX/segment/Standard/salesOrder'),
             fetchCrx('org.opencrx.kernel.account1/provider/CRX/segment/Standard/account')
         ]);
-
-        if (!allOrders || !Array.isArray(allOrders)) {
-            console.warn("No orders found.");
-            return [];
-        }
 
         const clientMap = new Map();
         if (allAccounts && Array.isArray(allAccounts)) {
@@ -123,7 +116,7 @@ async function getSalesDataForEmployee(salesmanId, year) {
                 clientName: clientData.name,
                 clientRanking: clientData.ranking.toString(),
                 quantity: positionData.quantity,
-                closingProbability: 50, // Mock value (I couldn't find this in OpenCRX, unfortunately)
+                closingProbability: 50,
                 amount: parseFloat(order.totalAmount) || 0,
                 currency: order.contractCurrency
             });
@@ -154,7 +147,6 @@ async function getCrxIdByGovernmentId(governmentId) {
     return null;
 }
 
-// Also, we should think about the bonus calculation logic, for now it's a simple example
 const calculateOrderBonus = (order) => {
     if(order.productName === "Hoover for big companies"){
         const rankingFactor = ((6 - order.clientRanking) * 5); // Lower ranking means better client

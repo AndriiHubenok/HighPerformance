@@ -1,0 +1,27 @@
+version: '3.9'
+services:
+  mariadb:
+    container_name: iar_mariadb
+    image: mariadb:10.5
+    hostname: mariadb
+    environment:
+      - MARIADB_USER=orangehrm
+      - MARIADB_PASSWORD=orangehrm
+      - MARIADB_DATABASE=orangehrm
+      - MARIADB_ROOT_PASSWORD=root
+    restart: on-failure
+  orangehrm:
+    container_name: iar_orangehrm
+    image: container.docker.inf.h-brs.de/diarchitect/diarchitect-iar-environment/orangehrm:latest
+    build: orangeHRM/.
+    ports:
+      - "8888:80"
+    depends_on:
+      - mariadb
+    restart: on-failure
+  opencrx:
+    container_name: iar_opencrx
+    image: container.docker.inf.h-brs.de/diarchitect/diarchitect-iar-environment/opencrx:latest
+    build: openCRX/.
+    ports:
+      - '8887:80'

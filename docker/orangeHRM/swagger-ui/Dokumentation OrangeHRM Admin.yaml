@@ -1,0 +1,423 @@
+openapi: 3.0.0
+info:
+  description: "Documentation of supported APIs for the customized HR Software OrangeHRM."
+  version: "1.0"
+  title: "OrangeHRM for Smarthoover Ltd."
+servers:
+  - url : "/symfony/web/index.php"
+    description: "local container"
+
+paths:
+  /oauth/issueToken:
+    post:
+      tags:
+        - "Authentication"
+      summary: "Authenticates and provides a Bearer Token"
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                client_id:
+                  type: string
+                client_secret:
+                  type: string
+                grant_type:
+                  type: string
+                  enum:
+                    - password
+                    - client_credentials
+                username:
+                  type: string
+                password:
+                  type: string
+                scope:
+                  type: string
+                  enum:
+                    - admin
+      responses:
+        "200":
+          description: "Success"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  expires_in:
+                    type: integer
+                  token_type:
+                    type: string
+                  scope:
+                    type: string
+                  refresh_token:
+                    type: string
+        "400":
+          description: "Bad Request"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  error_description:
+                    type: string
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  error_description:
+                    type: string
+  /api/v1/employee/{id}/bonussalary:
+    get:
+      tags:
+      - "Bonussalary"
+      summary: "Get Bonussalary for an Employee"
+      parameters:
+      - in: "path"
+        name: "id"
+        description: "ID of the Employee"
+        required: true
+        schema:
+         type : integer
+      responses:
+        "200":
+          description: "Success"
+        "202":
+          description: "No Matching Employee For Given ID Found"
+        "400":
+          description: "Wrong Grant Type For This Action"
+      security:
+        - bearerAuth: []
+    post:
+      tags:
+      - "Bonussalary"
+      summary: "Update or Add Bonussalary for an Employee"
+      parameters:
+      - name: "id"
+        in : path
+        description: "ID of the Employee"
+        required: true
+        schema:
+         type : integer
+      - in: "query"
+        name: "year"
+        description: "Year of the Bonussalary"
+        required: true
+        schema:
+         type : integer
+      - in: "query"
+        name: "value"
+        description: "Value of the Bonussalary"
+        required: true
+        schema:
+         type : integer
+      responses:
+        "200":
+          description: "Successfully Saved"
+        "202":
+          description: "No Matching Employee For Given ID Found"
+        "400":
+          description: "Wrong Grant Type For This Action"
+      security:
+        - bearerAuth: []
+    delete:
+      tags:
+      - "Bonussalary"
+      summary: "Delete Bonussalary for an Employee"
+      parameters:
+      - in: "path"
+        name: "id"
+        description: "ID of the Employee"
+        required: true
+        schema:
+         type : integer
+      - in: "query"
+        name: "year"
+        description: "Year of the Bonussalary"
+        required: true
+        schema:
+         type : integer
+      responses:
+        "200":
+          description: "Successfully Deleted"
+        "202":
+          description: "No Matching Employee For Given ID Found"
+        "400":
+          description: "Wrong Grant Type For This Action"
+      security:
+        - bearerAuth: []
+  /api/v1/user:
+    get:
+      tags:
+      - "User"
+      summary: "Get list of all Users"
+      parameters:
+      - in: "query"
+        name: "userName"
+        description: "User Name"
+        required: false
+        schema:
+         type : string
+      - in: "query"
+        name: "userType"
+        description: "Role of User"
+        required: false
+        schema:
+         type : integer
+      - in: "query"
+        name: "employeeID"
+        description: "EmployeeId from User"
+        required: false
+        schema:
+         type : integer
+      - in: "query"
+        name: "offset"
+        description: "Page Number"
+        required: false
+        schema:
+         type : integer
+      - in: "query"
+        name: "limit"
+        description: "Number of Results per Page"
+        required: false
+        schema:
+         type : integer
+      responses:
+        "200":
+          description: "Success"
+        "400":
+          description: "Please use a password credentials grant type for this action / You have no permission for this action."
+        "404":
+          description: "No Users Found"
+      security:
+        - bearerAuth: []
+    post:
+      tags:
+      - "User"
+      summary: "Create a new User without Employee"
+      parameters:
+      - in: "query"
+        name: "userName"
+        description: "User Name"
+        required: true
+        schema:
+         type : string
+      - in: "query"
+        name: "userPassword"
+        description: "Password for User"
+        required: true
+        schema:
+         type : string
+      - in: "query"
+        name: "tenantId"
+        description: "ID of Tenant"
+        required: false
+        schema:
+         type : integer
+      responses:
+        "200":
+          description: "Successfully Added"
+        "202":
+          description: "Username Must Not Be Empty / Password Must Not Be Empty / No Matching Tenant For Given ID Found"
+        "400":
+          description: "Please use a password credentials grant type for this action / You have no permission for this action."
+      security:
+        - bearerAuth: []
+    put:
+      tags:
+      - "User"
+      summary: "Reactivate the User Account and provides a way to change Password"
+      parameters:
+      - in: "query"
+        name: "userId"
+        description: "User ID"
+        required: true
+        schema:
+         type : integer
+      - in: "query"
+        name: "userPassword"
+        description: "Password for User"
+        required: true
+        schema:
+         type : string
+      responses:
+        "200":
+          description: "Successfully Changed"
+        "202":
+          description: "UserId Must Not Be Empty"
+        "400":
+          description: "Please use a password credentials grant type for this action / You have no permission for this action."
+      security:
+        - bearerAuth: []
+    delete:
+      tags:
+      - "User"
+      summary: "Delete a User (by setting Deleted to 1)"
+      parameters:
+      - in: "query"
+        name: "userId"
+        description: "User ID"
+        required: true
+        schema:
+         type : integer
+      responses:
+        "200":
+          description: "Successfully Deleted"
+        "202":
+          description: "UserId Must Not Be Empty"
+        "400":
+          description: "Please use a password credentials grant type for this action / You have no permission for this action."
+      security:
+        - bearerAuth: []
+  /api/v1/tenant:
+    get:
+      tags:
+      - "Tenant"
+      summary: "Get list of all Tenants"
+      responses:
+        "200":
+          description: "Success"
+        "400":
+          description: "Please use a password credentials grant type for this action / You have no permission for this action."
+        "404":
+          description: "No Tenants Found"
+      security:
+        - bearerAuth: []
+    post:
+      tags:
+      - "Tenant"
+      summary: "Create new Tenant"
+      parameters:
+      - in: "query"
+        name: "tenantName"
+        description: "Name for new Tenant"
+        required: true
+        schema:
+         type : string
+      - in: "query"
+        name: "tenantAttribute"
+        description: "Attribute of new Tenant"
+        required: false
+        schema:
+         type : string
+      responses:
+        "200":
+          description: "Successfully Added"
+        "202":
+          description: "Name Must Not Be Empty"
+        "400":
+          description: "Please use a password credentials grant type for this action / You have no permission for this action."
+        "404":
+          description: "Tenant Already Exists"
+      security:
+        - bearerAuth: []
+    delete:
+      tags:
+      - "Tenant"
+      summary: "Delete Tenant"
+      parameters:
+      - in: "query"
+        name: "tenantId"
+        description: "ID of Tenant"
+        required: true
+        schema:
+         type : integer
+      responses:
+        "200":
+          description: "Successfully Deleted"
+        "202":
+          description: "ID Must Not Be Empty / No Matching Tenant For Given ID Found"
+        "400":
+          description: "Please use a password credentials grant type for this action / You have no permission for this action."
+      security:
+        - bearerAuth: []
+  /api/v1/tenant/{id}/user:
+    get:
+      tags:
+      - "Tenant User"
+      summary: "Get list of Users from Tenant"
+      parameters:
+      - in: "path"
+        name: "id"
+        description: "ID of the Tenant"
+        required: true
+        schema:
+         type : integer
+      responses:
+        "200":
+          description: "Success"
+        "400":
+          description: "Please use a password credentials grant type for this action / You have no permission for this action."
+        "404":
+          description: "No Users For This Tenant Found"
+      security:
+        - bearerAuth: []
+    post:
+      tags:
+      - "Tenant User"
+      summary: "Add User to Tenant"
+      parameters:
+      - in: "path"
+        name: "id"
+        description: "ID of the Tenant"
+        required: true
+        schema:
+         type : integer
+      - in: "query"
+        name: "userId"
+        description: "ID of the User"
+        required: true
+        schema:
+         type : integer
+      responses:
+        "200":
+          description: "Successfully Added"
+        "202":
+          description: "UserID Must Not Be Empty / No Matching User For Given ID Found / User Already Member Of A Tenant"
+        "400":
+          description: "Please use a password credentials grant type for this action / You have no permission for this action."
+      security:
+        - bearerAuth: []
+    delete:
+      tags:
+      - "Tenant User"
+      summary: "Delete User from Tenant"
+      parameters:
+      - in: "path"
+        name: "id"
+        description: "ID of the Tenant"
+        required: true
+        schema:
+         type : integer
+      - in: "query"
+        name: "userId"
+        description: "ID of the User"
+        required: true
+        schema:
+         type : integer
+      responses:
+        "200":
+          description: "Successfully Deleted"
+        "202":
+          description: "UserID Must Not Be Empty / No Matching User For Given ID Found / User Not A Member Of This Tenant"
+        "400":
+          description: "Please use a password credentials grant type for this action / You have no permission for this action."
+      security:
+        - bearerAuth: []
+        
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

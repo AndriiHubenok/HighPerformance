@@ -1,0 +1,15 @@
+FAQ: Tenantadmin
+
+Q: Wie kann ein Tenantadmin erstellt werden?
+A: Die Rolle Tenantadmin muss manuell über die Datenbank zugewiesen werden.
+Dazu wird einen User aus 'ohrm_user' die 'user_role_id' = '8' zugewiesen.
+Beispiel am Standard Admin (id = 1): UPDATE `ohrm_user` SET `user_role_id` = '8' WHERE `ohrm_user`.`id` = 1;
+
+Q: Wie kann der Tenantadmin aus der Liste der User unter 'Admin > User Management > Users' entfernt werden?
+A: Dazu muss die Eigenschaft 'deleted' des Users in 'ohrm_user' auf den Wert '1' gesetzt werden.
+Beispiel am Standard Admin (id = 1): UPDATE `ohrm_user` SET `deleted` = '1' WHERE `ohrm_user`.`id` = 1;
+
+Bemerkung (Falsch):
+Jeder neu angelegte User erhält die Tenant_ID 'NULL'. Diese stellt den "Standard"-Tenant dar. 
+Alle User die keinem Tenant zugewiesen wurden, teilen sich somit die Daten.
+Das Tenant-Dashboard stellt keine Einträge des 'NULL'-Tenants dar.
